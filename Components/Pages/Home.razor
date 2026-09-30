@@ -1,7 +1,140 @@
-﻿@page "/"
+@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Software, die zu Ihnen passt | Codewerk</PageTitle>
+<meta name="description" content="Individuelle Softwareentwicklung für Web, Unternehmen und digitale Ideen. Transparent geplant und nach tatsächlichem Aufwand kalkuliert." />
 
-<h1>Hello, world!</h1>
+<div class="site-shell">
+    <header class="site-header">
+        <a class="brand" href="#" aria-label="Codewerk Startseite">
+            <span class="brand-mark">&lt;/&gt;</span>
+            <span>codewerk<span class="brand-dot">.</span></span>
+        </a>
+        <nav class="main-nav" aria-label="Hauptnavigation">
+            <a href="#leistungen">Leistungen</a>
+            <a href="#ablauf">So arbeiten wir</a>
+            <a class="nav-cta" href="#kontakt">Projekt besprechen <span aria-hidden="true">↗</span></a>
+        </nav>
+    </header>
 
-Welcome to your new app.
+    <main>
+        <section class="hero section-wrap">
+            <div class="hero-copy">
+                <div class="eyebrow"><span class="status-dot"></span> Digitale Lösungen, klar durchdacht</div>
+                <h1>Gute Ideen.<br />Sauber <span class="highlight">programmiert.</span></h1>
+                <p class="hero-lede">Wir entwickeln Software, die Ihren Alltag einfacher macht — vom modernen Webauftritt bis zur individuellen Anwendung.</p>
+                <div class="hero-actions">
+                    <a class="button button-dark" href="#leistungen">Leistungen entdecken <span aria-hidden="true">↓</span></a>
+                    <span class="hero-note">Persönlich. Transparent. Ohne Standards von der Stange.</span>
+                </div>
+                <div class="hero-proof">
+                    <span class="proof-icon" aria-hidden="true">✳</span>
+                    <span><strong>Passend statt pauschal</strong><br />Jedes Projekt beginnt mit Ihren Anforderungen.</span>
+                </div>
+            </div>
+
+            <div class="hero-art" aria-label="Abstrakte Darstellung eines Softwareprojekts">
+                <div class="art-orbit orbit-one"></div>
+                <div class="art-orbit orbit-two"></div>
+                <div class="art-spark spark-one">✳</div>
+                <div class="art-spark spark-two">+</div>
+                <div class="code-window">
+                    <div class="window-top"><span></span><span></span><span></span><small>dein-projekt.cs</small></div>
+                    <div class="code-content">
+                        <div><span class="code-muted">01</span> <span class="code-purple">public class</span> <span class="code-green">DeineIdee</span></div>
+                        <div><span class="code-muted">02</span> {</div>
+                        <div><span class="code-muted">03</span> &nbsp; <span class="code-purple">public string</span> <span class="code-blue">Ziel</span> =&nbsp;</div>
+                        <div><span class="code-muted">04</span> &nbsp; &nbsp; <span class="code-yellow">"Einfach besser arbeiten"</span>;</div>
+                        <div><span class="code-muted">05</span> }</div>
+                        <div class="code-cursor-line"><span class="code-muted">06</span> <span class="code-cursor"></span></div>
+                    </div>
+                    <div class="window-status"><span><span class="status-dot"></span> Läuft nach Plan</span><span>build · erfolgreich</span></div>
+                </div>
+                <div class="floating-note"><span class="note-check">✓</span><span><strong>Dein Vorhaben.</strong><br />Unsere Lösung.</span></div>
+                <div class="art-caption">Klarer Code. Echte Wirkung.</div>
+            </div>
+        </section>
+
+        <section class="services-section" id="leistungen">
+            <div class="section-wrap">
+                <div class="section-heading">
+                    <div>
+                        <div class="eyebrow"><span class="eyebrow-number">01</span> Was wir für Sie entwickeln</div>
+                        <h2>Vier Wege, etwas<br />besser zu machen<span class="highlight">.</span></h2>
+                    </div>
+                    <p>Ob digitaler Neustart oder die nächste Ausbaustufe: Wir finden gemeinsam den passenden Einstieg.</p>
+                </div>
+
+                <div class="service-grid">
+                    <article class="service-card service-web">
+                        <div class="card-top"><span class="card-number">01 / WEB</span><span class="card-icon" aria-hidden="true">↗</span></div>
+                        <div class="mini-visual visual-web"><span></span><span></span><span></span><i></i></div>
+                        <h3>Websites &amp; Web-Apps</h3>
+                        <p>Ein überzeugender Auftritt oder eine leistungsstarke Anwendung — auf allen Geräten zu Hause.</p>
+                        <div class="card-tags"><span>Webdesign</span><span>Blazor</span><span>Responsive</span></div>
+                        <a class="card-link" href="#kontakt">Webprojekt besprechen <span aria-hidden="true">↗</span></a>
+                    </article>
+
+                    <article class="service-card service-automation">
+                        <div class="card-top"><span class="card-number">02 / FLOW</span><span class="card-icon" aria-hidden="true">⤴</span></div>
+                        <div class="mini-visual visual-flow"><span>Input</span><i>→</i><span>Flow</span><i>→</i><span>Done</span></div>
+                        <h3>Automatisierung</h3>
+                        <p>Wiederkehrende Aufgaben abgeben und mehr Zeit für die Arbeit gewinnen, die wirklich zählt.</p>
+                        <div class="card-tags"><span>Workflows</span><span>Tools</span><span>Schnittstellen</span></div>
+                        <a class="card-link" href="#kontakt">Abläufe vereinfachen <span aria-hidden="true">↗</span></a>
+                    </article>
+
+                    <article class="service-card service-integrations">
+                        <div class="card-top"><span class="card-number">03 / CONNECT</span><span class="card-icon" aria-hidden="true">⌘</span></div>
+                        <div class="mini-visual visual-connect"><span class="connect-node">A</span><i></i><span class="connect-node connect-center">API</span><i></i><span class="connect-node">B</span></div>
+                        <h3>APIs &amp; Integrationen</h3>
+                        <p>Ihre Systeme arbeiten endlich zusammen — sicher verbunden und sinnvoll aufeinander abgestimmt.</p>
+                        <div class="card-tags"><span>APIs</span><span>Integration</span><span>Daten</span></div>
+                        <a class="card-link" href="#kontakt">Systeme verbinden <span aria-hidden="true">↗</span></a>
+                    </article>
+
+                    <article class="service-card service-custom">
+                        <div class="card-top"><span class="card-number">04 / CUSTOM</span><span class="card-icon" aria-hidden="true">✳</span></div>
+                        <div class="mini-visual visual-custom"><span>{</span><i></i><span>...</span><i></i><span>}</span></div>
+                        <h3>Individuelle Software</h3>
+                        <p>Eine maßgeschneiderte Lösung für Anforderungen, für die es einfach nichts von der Stange gibt.</p>
+                        <div class="card-tags"><span>.NET</span><span>C#</span><span>Nach Maß</span></div>
+                        <a class="card-link" href="#kontakt">Idee gemeinsam planen <span aria-hidden="true">↗</span></a>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="approach-section section-wrap" id="ablauf">
+            <div class="approach-intro">
+                <div class="eyebrow"><span class="eyebrow-number">02</span> Ohne Überraschungen</div>
+                <h2>Erst verstehen.<br />Dann entwickeln.</h2>
+                <p>Gute Software entsteht im Dialog. Sie wissen von Anfang an, was wir tun — und warum.</p>
+            </div>
+            <div class="approach-steps">
+                <article class="step"><span class="step-number">01</span><div><h3>Wir hören zu</h3><p>Wir klären Ihre Ziele, Wünsche und den Rahmen des Projekts.</p></div></article>
+                <article class="step"><span class="step-number">02</span><div><h3>Wir planen gemeinsam</h3><p>Sie erhalten einen klaren Vorschlag mit transparentem Aufwand.</p></div></article>
+                <article class="step"><span class="step-number">03</span><div><h3>Wir setzen um</h3><p>Schritt für Schritt entsteht eine Lösung, die zu Ihnen passt.</p></div></article>
+            </div>
+        </section>
+
+        <section class="pricing-section" id="kontakt">
+            <div class="pricing-card section-wrap">
+                <div class="pricing-spark" aria-hidden="true">✳</div>
+                <div class="eyebrow"><span class="eyebrow-number">FAIR &amp; TRANSPARENT</span></div>
+                <h2>Ein fairer Preis.<br /><span>Für Ihr echtes Vorhaben.</span></h2>
+                <p>Individuelle Software hat keinen Pauschalpreis. Wir kalkulieren jedes Projekt transparent nach Aufwand — passend zu Ihren Anforderungen und Ihrem Umfang.</p>
+                <a class="button button-light" href="#leistungen">Das passende Angebot finden <span aria-hidden="true">↑</span></a>
+                <div class="pricing-footnote"><span>Keine versteckten Kosten</span><span>Klare Abstimmung vor dem Start</span><span>Aufwand statt Schätzpreis</span></div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer section-wrap">
+        <a class="brand" href="#" aria-label="Codewerk zurück nach oben">
+            <span class="brand-mark">&lt;/&gt;</span>
+            <span>codewerk<span class="brand-dot">.</span></span>
+        </a>
+        <span>Mit Sorgfalt entwickelt. Mit Ihnen gedacht.</span>
+        <a href="#leistungen">Zurück nach oben ↑</a>
+    </footer>
+</div>
