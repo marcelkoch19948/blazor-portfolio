@@ -27,4 +27,6 @@ app.UseAntiforgery();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+await SampleDataSeeder.SeedAsync(app.Services);
+
 app.Run();

@@ -213,7 +213,41 @@ app.MapPost("/api/photos", async (
     return Results.Created($"/api/photos/{created.Id}", created);
 }).DisableAntiforgery();
 
+// Invoices
+app.MapGet("/api/invoices", async (IInvoiceService invoiceService, CancellationToken ct) =>
+{
+    IReadOnlyList<Invoice> invoices = await invoiceService.GetAllAsync(ct);
+    return Results.Ok(invoices);
+});
+
+app.MapGet("/api/sites/{siteId:guid}/invoices", async (Guid siteId, IInvoiceService invoiceService, CancellationToken ct) =>
+{
+    IReadOnlyList<Invoice> invoices = await invoiceService.GetBySiteIdAsync(siteId, ct);
+    return Results.Ok(invoices);
+});
+
+app.MapGet("/api/invoices/{id:guid}", async (Guid id, IInvoiceService invoiceService, CancellationToken ct) =>
+{
+    Invoice? invoice = await invoiceService.GetByIdAsync(id, ct);
+    return invoice is not null ? Results.Ok(invoice) : Results.NotFound();
+});
+
+app.MapPost("/api/invoices", async (Invoice invoice, IInvoiceService invoiceService, CancellationToken ct) =>
+{
+    Invoice created = await invoiceService.CreateInvoiceAsync(invoice, ct);
+    return Results.Created($"/api/invoices/{created.Id}", created);
+});
+
+app.MapPatch("/api/invoices/{id:guid}/status", async (Guid id, UpdateInvoiceStatusRequest request, IInvoiceService invoiceService, CancellationToken ct) =>
+{
+    Invoice updated = await invoiceService.UpdateStatusAsync(id, request.Status, ct);
+    return Results.Ok(updated);
+});
+
+await SampleDataSeeder.SeedAsync(app.Services);
+
 app.Run();
 
 public record UpdateProgressRequest(int ProgressPercentage);
 public record AssignUserRequest(Guid SiteId, Guid UserId, Guid? AssignedByUserId, string? Notes);
+public record UpdateInvoiceStatusRequest(InvoiceStatus Status);

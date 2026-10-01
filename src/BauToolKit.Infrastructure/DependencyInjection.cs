@@ -19,6 +19,7 @@ public static class DependencyInjection
         services.AddSingleton<IWorkLogRepository, InMemoryWorkLogRepository>();
         services.AddSingleton<IPhotoDocumentationRepository, InMemoryPhotoDocumentationRepository>();
         services.AddSingleton<IUserRepository, InMemoryUserRepository>();
+        services.AddSingleton<IInvoiceRepository, InMemoryInvoiceRepository>();
 
         services.AddSingleton<IFileStorageService>(_ => new LocalFileStorageService(storageRootPath));
 

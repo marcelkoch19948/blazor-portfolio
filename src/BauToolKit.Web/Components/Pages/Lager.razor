@@ -1,0 +1,393 @@
+@page "/lager"
+@rendermode InteractiveServer
+@inject IInventoryService InventoryService
+@inject IConstructionSiteService SiteService
+@inject IUserRepository UserRepository
+
+<PageTitle>Lager &amp; Material - BauToolKit</PageTitle>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">📦 Lagerbestand &amp; Materialwirtschaft</h2>
+            <p class="text-muted mb-0">Echtzeit-Lagerübersicht für Desktop, Tablet und Smartphone sowie Materialbuchungen.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" @onclick="ToggleNewItemForm">
+                @(ShowNewItemForm ? "Abbrechen" : "+ Neuer Artikel")
+            </button>
+            <button class="btn btn-primary" @onclick="ToggleBookingForm">
+                @(ShowBookingForm ? "Abbrechen" : "⇄ Material buchen")
+            </button>
+        </div>
+    </div>
+
+    @if (ShowNewItemForm)
+    {
+        <div class="card shadow-sm mb-4 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Neuen Lagerartikel anlegen</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Artikelnummer</label>
+                        <input type="text" class="form-control" placeholder="z. B. MAT-100" @bind="NewItemNumber" />
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold small">Artikelbezeichnung</label>
+                        <input type="text" class="form-control" placeholder="z. B. Gipskartonplatten" @bind="NewItemName" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small">Einheit</label>
+                        <input type="text" class="form-control" placeholder="Stk, m, kg" @bind="NewItemUnit" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small">Mindestbestand</label>
+                        <input type="number" step="1" class="form-control" @bind="NewItemMinStock" />
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label fw-bold small">Beschreibung</label>
+                        <input type="text" class="form-control" placeholder="Details zum Material" @bind="NewItemDescription" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small">Preis je Einheit (€)</label>
+                        <input type="number" step="0.05" class="form-control" @bind="NewItemUnitPrice" />
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <div class="alert alert-danger py-2 mt-3 mb-0">@ErrorMessage</div>
+                }
+
+                <div class="mt-3 text-end">
+                    <button class="btn btn-secondary me-2" @onclick="ToggleNewItemForm">Abbrechen</button>
+                    <button class="btn btn-success" @onclick="SaveNewItemAsync">Artikel anlegen</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (ShowBookingForm)
+    {
+        <div class="card shadow-sm mb-4 border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Materialbuchung (Verbrauch / Zugang / Rückgabe)</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small">Lagerartikel</label>
+                        <select class="form-select" @bind="BookingItemIdString">
+                            <option value="">-- Artikel wählen --</option>
+                            @foreach (InventoryItem item in Items)
+                            {
+                                <option value="@item.Id">@item.Name (@item.CurrentStock @item.Unit vorhanden)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Buchungsart</label>
+                        <select class="form-select" @bind="BookingType">
+                            <option value="@BookingType.Verbrauch">Verbrauch (Baustelle)</option>
+                            <option value="@BookingType.Zugang">Zugang (Lieferung ins Lager)</option>
+                            <option value="@BookingType.Rueckgabe">Rückgabe von Baustelle</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small">Menge</label>
+                        <input type="number" step="0.5" min="0.1" class="form-control" @bind="BookingQuantity" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Mitarbeiter</label>
+                        <select class="form-select" @bind="BookingUserIdString">
+                            <option value="">-- Mitarbeiter wählen --</option>
+                            @foreach (User u in Users)
+                            {
+                                <option value="@u.Id">@u.FullName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small">Baustelle (optional)</label>
+                        <select class="form-select" @bind="BookingSiteIdString">
+                            <option value="">-- Keine / Lager intern --</option>
+                            @foreach (ConstructionSite s in Sites)
+                            {
+                                <option value="@s.Id">@s.Title</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small">Notiz / Zweck</label>
+                        <input type="text" class="form-control" placeholder="z. B. Lieferschein 1234 oder Nordseite Wand" @bind="BookingNotes" />
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <div class="alert alert-danger py-2 mt-3 mb-0">@ErrorMessage</div>
+                }
+
+                <div class="mt-3 text-end">
+                    <button class="btn btn-secondary me-2" @onclick="ToggleBookingForm">Abbrechen</button>
+                    <button class="btn btn-success" @onclick="ExecuteBookingAsync">Buchung durchführen</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Lade Lagerdaten...</p>
+        </div>
+    }
+    else
+    {
+        <!-- Artikel-Tabelle -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0 fw-bold">Aktuelle Artikelbestände</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Art.-Nr.</th>
+                            <th>Bezeichnung</th>
+                            <th>Bestand</th>
+                            <th>Mindestbestand</th>
+                            <th>Status</th>
+                            <th>Einzelpreis</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (InventoryItem item in Items)
+                        {
+                            <tr class="@(item.IsLowStock ? "table-warning" : "")">
+                                <td class="fw-bold font-monospace">@item.ItemNumber</td>
+                                <td>
+                                    <strong>@item.Name</strong>
+                                    @if (!string.IsNullOrWhiteSpace(item.Description))
+                                    {
+                                        <br /><small class="text-muted">@item.Description</small>
+                                    }
+                                </td>
+                                <td class="fw-bold fs-6">
+                                    @item.CurrentStock @item.Unit
+                                </td>
+                                <td class="text-secondary">
+                                    @item.MinimumStock @item.Unit
+                                </td>
+                                <td>
+                                    @if (item.IsLowStock)
+                                    {
+                                        <span class="badge bg-warning text-dark">⚠️ Nachbestellen!</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">Ausreichend</span>
+                                    }
+                                </td>
+                                <td>@item.UnitPrice.ToString("C2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Letzte Materialbuchungen -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light">
+                <h5 class="mb-0 fw-bold">Historie der Materialbuchungen</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Datum</th>
+                            <th>Artikel</th>
+                            <th>Art</th>
+                            <th>Menge</th>
+                            <th>Baustelle</th>
+                            <th>Gebucht von</th>
+                            <th>Notizen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (MaterialBooking booking in Bookings.Take(15))
+                        {
+                            InventoryItem? item = Items.FirstOrDefault(i => i.Id == booking.InventoryItemId);
+                            ConstructionSite? site = Sites.FirstOrDefault(s => s.Id == booking.ConstructionSiteId);
+                            User? user = Users.FirstOrDefault(u => u.Id == booking.BookedByUserId);
+
+                            <tr>
+                                <td class="small text-muted">@booking.BookingDateUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                                <td><strong>@(item?.Name ?? "Artikel")</strong></td>
+                                <td>
+                                    <span class="badge @(booking.Type == BookingType.Zugang ? "bg-success" : booking.Type == BookingType.Verbrauch ? "bg-primary" : "bg-info text-dark")">
+                                        @booking.Type
+                                    </span>
+                                </td>
+                                <td class="fw-bold">@booking.Quantity @(item?.Unit ?? "")</td>
+                                <td>@(site?.Title ?? "-")</td>
+                                <td>@(user?.FullName ?? "-")</td>
+                                <td class="text-muted small">@booking.Notes</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<InventoryItem> Items { get; set; } = Array.Empty<InventoryItem>();
+    private IReadOnlyList<MaterialBooking> Bookings { get; set; } = Array.Empty<MaterialBooking>();
+    private IReadOnlyList<ConstructionSite> Sites { get; set; } = Array.Empty<ConstructionSite>();
+    private IReadOnlyList<User> Users { get; set; } = Array.Empty<User>();
+
+    private bool IsLoading { get; set; } = true;
+    private bool ShowNewItemForm { get; set; }
+    private bool ShowBookingForm { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    // Neuer Artikel
+    private string NewItemNumber { get; set; } = string.Empty;
+    private string NewItemName { get; set; } = string.Empty;
+    private string NewItemDescription { get; set; } = string.Empty;
+    private string NewItemUnit { get; set; } = "Stk";
+    private decimal NewItemMinStock { get; set; } = 10;
+    private decimal NewItemUnitPrice { get; set; } = 0.0m;
+
+    // Neue Buchung
+    private string BookingItemIdString { get; set; } = string.Empty;
+    private BookingType BookingType { get; set; } = BookingType.Verbrauch;
+    private decimal BookingQuantity { get; set; } = 1.0m;
+    private string BookingUserIdString { get; set; } = string.Empty;
+    private string BookingSiteIdString { get; set; } = string.Empty;
+    private string BookingNotes { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            Items = await InventoryService.GetAllItemsAsync();
+            var allBookings = new List<MaterialBooking>();
+            foreach (InventoryItem item in Items)
+            {
+                IReadOnlyList<MaterialBooking> itemBookings = await InventoryService.GetBookingsByItemAsync(item.Id);
+                allBookings.AddRange(itemBookings);
+            }
+            Bookings = allBookings.OrderByDescending(b => b.BookingDateUtc).Take(30).ToList();
+            Sites = await SiteService.GetAllAsync();
+            Users = await UserRepository.GetAllAsync();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ToggleNewItemForm()
+    {
+        ShowNewItemForm = !ShowNewItemForm;
+        ShowBookingForm = false;
+        ErrorMessage = null;
+    }
+
+    private void ToggleBookingForm()
+    {
+        ShowBookingForm = !ShowBookingForm;
+        ShowNewItemForm = false;
+        ErrorMessage = null;
+    }
+
+    private async Task SaveNewItemAsync()
+    {
+        ErrorMessage = null;
+        if (string.IsNullOrWhiteSpace(NewItemNumber) || string.IsNullOrWhiteSpace(NewItemName))
+        {
+            ErrorMessage = "Artikelnummer und Bezeichnung dürfen nicht leer sein.";
+            return;
+        }
+
+        var item = new InventoryItem
+        {
+            ItemNumber = NewItemNumber.Trim(),
+            Name = NewItemName.Trim(),
+            Description = NewItemDescription.Trim(),
+            Unit = string.IsNullOrWhiteSpace(NewItemUnit) ? "Stk" : NewItemUnit.Trim(),
+            MinimumStock = NewItemMinStock,
+            UnitPrice = NewItemUnitPrice
+        };
+
+        await InventoryService.CreateItemAsync(item);
+
+        NewItemNumber = string.Empty;
+        NewItemName = string.Empty;
+        NewItemDescription = string.Empty;
+        ShowNewItemForm = false;
+
+        await LoadDataAsync();
+    }
+
+    private async Task ExecuteBookingAsync()
+    {
+        ErrorMessage = null;
+        if (!Guid.TryParse(BookingItemIdString, out Guid itemId))
+        {
+            ErrorMessage = "Bitte wähle einen Artikel aus.";
+            return;
+        }
+
+        if (!Guid.TryParse(BookingUserIdString, out Guid userId))
+        {
+            ErrorMessage = "Bitte wähle den buchenden Mitarbeiter aus.";
+            return;
+        }
+
+        if (BookingQuantity <= 0)
+        {
+            ErrorMessage = "Die Menge muss größer als 0 sein.";
+            return;
+        }
+
+        Guid? siteId = Guid.TryParse(BookingSiteIdString, out Guid sId) ? sId : null;
+
+        try
+        {
+            var req = new MaterialBookingRequest(
+                InventoryItemId: itemId,
+                ConstructionSiteId: siteId,
+                BookedByUserId: userId,
+                Type: BookingType,
+                Quantity: BookingQuantity,
+                Notes: string.IsNullOrWhiteSpace(BookingNotes) ? null : BookingNotes.Trim()
+            );
+
+            await InventoryService.BookMaterialAsync(req);
+
+            BookingItemIdString = string.Empty;
+            BookingNotes = string.Empty;
+            ShowBookingForm = false;
+
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
+}

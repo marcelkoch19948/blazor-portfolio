@@ -1,0 +1,378 @@
+@page "/rechnungen"
+@rendermode InteractiveServer
+@inject IInvoiceService InvoiceService
+@inject IConstructionSiteService SiteService
+@inject ICustomerService CustomerService
+
+<PageTitle>Rechnungen &amp; Abschlagsrechnungen - BauToolKit</PageTitle>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">📑 Rechnungen &amp; Zwischenrechnungen</h2>
+            <p class="text-muted mb-0">Abwicklung von Abschlags- und Schlussrechnungen je Baufortschritt für Chefs.</p>
+        </div>
+        <button class="btn btn-primary" @onclick="ToggleNewInvoiceForm">
+            @(ShowNewInvoiceForm ? "Abbrechen" : "+ Neue Rechnung erstellen")
+        </button>
+    </div>
+
+    @if (ShowNewInvoiceForm)
+    {
+        <div class="card shadow-sm mb-4 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Neue Rechnung anlegen</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Rechnungsnummer</label>
+                        <input type="text" class="form-control" placeholder="z. B. RE-2026-003" @bind="NewInvoiceNumber" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Rechnungsart</label>
+                        <select class="form-select" @bind="NewInvoiceType">
+                            <option value="@InvoiceType.Abschlagsrechnung">Abschlagsrechnung (Zwischenrechnung)</option>
+                            <option value="@InvoiceType.Schlussrechnung">Schlussrechnung</option>
+                            <option value="@InvoiceType.Einzelforderung">Einzelforderung</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Baustelle</label>
+                        <select class="form-select" @bind="SelectedSiteIdString" @bind:after="OnSiteSelected">
+                            <option value="">-- Baustelle wählen --</option>
+                            @foreach (ConstructionSite s in Sites)
+                            {
+                                <option value="@s.Id">@s.Title (@s.City)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Kunde</label>
+                        <select class="form-select" @bind="SelectedCustomerIdString">
+                            <option value="">-- Kunde wählen --</option>
+                            @foreach (Customer c in Customers)
+                            {
+                                <option value="@c.Id">@c.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold small">Rechnungshinweis / Bauabschnitt</label>
+                        <input type="text" class="form-control" placeholder="z. B. 2. Abschlagsrechnung nach Dachdeckung" @bind="NewInvoiceNotes" />
+                    </div>
+
+                    <!-- Rechnungspositionen -->
+                    <div class="col-12 mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold mb-0">Rechnungspositionen</h6>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="AddEmptyPosition">+ Position hinzufügen</button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 50%;">Beschreibung</th>
+                                        <th style="width: 15%;">Menge</th>
+                                        <th style="width: 15%;">Einheit</th>
+                                        <th style="width: 15%;">Einzelpreis (€)</th>
+                                        <th style="width: 5%;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < NewPositions.Count; i++)
+                                    {
+                                        int index = i;
+                                        PositionDraft pos = NewPositions[index];
+                                        <tr>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" placeholder="Bezeichnung der Leistung" @bind="pos.Description" />
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.5" class="form-control form-control-sm" @bind="pos.Quantity" />
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" placeholder="Std / pauschal / Stk" @bind="pos.Unit" />
+                                            </td>
+                                            <td>
+                                                <input type="number" step="1.00" class="form-control form-control-sm" @bind="pos.UnitPrice" />
+                                            </td>
+                                            <td class="text-center">
+                                                @if (NewPositions.Count > 1)
+                                                {
+                                                    <button class="btn btn-sm btn-link text-danger p-0" @onclick="@(() => NewPositions.RemoveAt(index))">&times;</button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <div class="alert alert-danger py-2 mt-3 mb-0">@ErrorMessage</div>
+                }
+
+                <div class="mt-3 text-end">
+                    <button class="btn btn-secondary me-2" @onclick="ToggleNewInvoiceForm">Abbrechen</button>
+                    <button class="btn btn-success" @onclick="SaveInvoiceAsync">Rechnung erstellen</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Lade Rechnungen...</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (Invoice inv in Invoices)
+            {
+                Customer? customer = Customers.FirstOrDefault(c => c.Id == inv.CustomerId);
+                ConstructionSite? site = Sites.FirstOrDefault(s => s.Id == inv.ConstructionSiteId);
+
+                <div class="col-lg-6">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h5 class="fw-bold mb-0">@inv.InvoiceNumber</h5>
+                                    <span class="badge bg-secondary">@inv.Type</span>
+                                </div>
+                                <span class="badge @GetStatusBadge(inv.Status)">@inv.Status</span>
+                            </div>
+
+                            <p class="small text-muted mb-2">
+                                <strong>Kunde:</strong> @(customer?.Name ?? "-") &bull;
+                                <strong>Baustelle:</strong> @(site?.Title ?? "-")
+                            </p>
+
+                            @if (!string.IsNullOrEmpty(inv.Notes))
+                            {
+                                <p class="small text-secondary mb-3">@inv.Notes</p>
+                            }
+
+                            <!-- Positionen-Liste -->
+                            <div class="table-responsive mb-3">
+                                <table class="table table-sm table-striped small mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Position</th>
+                                            <th class="text-end">Menge</th>
+                                            <th class="text-end">Einzel</th>
+                                            <th class="text-end">Gesamt</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (InvoicePosition pos in inv.Positions)
+                                        {
+                                            <tr>
+                                                <td>@pos.Description</td>
+                                                <td class="text-end">@pos.Quantity @pos.Unit</td>
+                                                <td class="text-end">@pos.UnitPrice.ToString("C2")</td>
+                                                <td class="text-end fw-bold">@pos.LineTotal.ToString("C2")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="3" class="text-end">Netto:</td>
+                                            <td class="text-end">@inv.CalculateNetTotal().ToString("C2")</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="3" class="text-end text-muted">MwSt. (@inv.TaxRatePercentage %):</td>
+                                            <td class="text-end text-muted">@inv.CalculateTaxAmount().ToString("C2")</td>
+                                        </tr>
+                                        <tr class="fw-bold fs-6 table-light">
+                                            <td colspan="3" class="text-end">Brutto:</td>
+                                            <td class="text-end text-primary">@inv.CalculateGrossTotal().ToString("C2")</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+
+                            <!-- Status-Aktionen -->
+                            <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                                <small class="text-muted">Fällig am: @inv.DueDate.ToString("dd.MM.yyyy")</small>
+                                <div class="d-flex gap-1">
+                                    @if (inv.Status == InvoiceStatus.Entwurf)
+                                    {
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="@(async () => await UpdateInvoiceStatus(inv.Id, InvoiceStatus.Gestellt))">
+                                            Stellen
+                                        </button>
+                                    }
+                                    @if (inv.Status == InvoiceStatus.Gestellt)
+                                    {
+                                        <button class="btn btn-sm btn-success" @onclick="@(async () => await UpdateInvoiceStatus(inv.Id, InvoiceStatus.Bezahlt))">
+                                            ✓ Bezahlt markieren
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<Invoice> Invoices { get; set; } = Array.Empty<Invoice>();
+    private IReadOnlyList<ConstructionSite> Sites { get; set; } = Array.Empty<ConstructionSite>();
+    private IReadOnlyList<Customer> Customers { get; set; } = Array.Empty<Customer>();
+
+    private bool IsLoading { get; set; } = true;
+    private bool ShowNewInvoiceForm { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    private string NewInvoiceNumber { get; set; } = $"RE-{DateTime.UtcNow.Year}-{Random.Shared.Next(100, 999)}";
+    private InvoiceType NewInvoiceType { get; set; } = InvoiceType.Abschlagsrechnung;
+    private string SelectedSiteIdString { get; set; } = string.Empty;
+    private string SelectedCustomerIdString { get; set; } = string.Empty;
+    private string NewInvoiceNotes { get; set; } = string.Empty;
+    private List<PositionDraft> NewPositions { get; set; } = new();
+
+    private class PositionDraft
+    {
+        public string Description { get; set; } = string.Empty;
+        public decimal Quantity { get; set; } = 1m;
+        public string Unit { get; set; } = "pauschal";
+        public decimal UnitPrice { get; set; } = 1000m;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        AddEmptyPosition();
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            Invoices = await InvoiceService.GetAllAsync();
+            Sites = await SiteService.GetAllAsync();
+            Customers = await CustomerService.GetAllAsync();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ToggleNewInvoiceForm()
+    {
+        ShowNewInvoiceForm = !ShowNewInvoiceForm;
+        ErrorMessage = null;
+    }
+
+    private void AddEmptyPosition()
+    {
+        NewPositions.Add(new PositionDraft());
+    }
+
+    private void OnSiteSelected()
+    {
+        if (Guid.TryParse(SelectedSiteIdString, out Guid sId))
+        {
+            ConstructionSite? site = Sites.FirstOrDefault(s => s.Id == sId);
+            if (site is not null)
+            {
+                SelectedCustomerIdString = site.CustomerId.ToString();
+            }
+        }
+    }
+
+    private async Task SaveInvoiceAsync()
+    {
+        ErrorMessage = null;
+        if (string.IsNullOrWhiteSpace(NewInvoiceNumber))
+        {
+            ErrorMessage = "Bitte Rechnungsnummer eingeben.";
+            return;
+        }
+
+        if (!Guid.TryParse(SelectedSiteIdString, out Guid siteId))
+        {
+            ErrorMessage = "Bitte Baustelle auswählen.";
+            return;
+        }
+
+        if (!Guid.TryParse(SelectedCustomerIdString, out Guid customerId))
+        {
+            ErrorMessage = "Bitte Kunde auswählen.";
+            return;
+        }
+
+        var inv = new Invoice
+        {
+            InvoiceNumber = NewInvoiceNumber.Trim(),
+            ConstructionSiteId = siteId,
+            CustomerId = customerId,
+            Type = NewInvoiceType,
+            Status = InvoiceStatus.Gestellt,
+            Notes = string.IsNullOrWhiteSpace(NewInvoiceNotes) ? null : NewInvoiceNotes.Trim()
+        };
+
+        foreach (PositionDraft p in NewPositions)
+        {
+            if (string.IsNullOrWhiteSpace(p.Description))
+            {
+                ErrorMessage = "Jede Position benötigt eine Beschreibung.";
+                return;
+            }
+
+            inv.AddPosition(new InvoicePosition
+            {
+                InvoiceId = inv.Id,
+                Description = p.Description.Trim(),
+                Quantity = p.Quantity,
+                Unit = p.Unit.Trim(),
+                UnitPrice = p.UnitPrice
+            });
+        }
+
+        try
+        {
+            await InvoiceService.CreateInvoiceAsync(inv);
+
+            NewInvoiceNumber = $"RE-{DateTime.UtcNow.Year}-{Random.Shared.Next(100, 999)}";
+            NewInvoiceNotes = string.Empty;
+            NewPositions = new List<PositionDraft> { new() };
+            ShowNewInvoiceForm = false;
+
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
+
+    private async Task UpdateInvoiceStatus(Guid id, InvoiceStatus status)
+    {
+        await InvoiceService.UpdateStatusAsync(id, status);
+        await LoadDataAsync();
+    }
+
+    private static string GetStatusBadge(InvoiceStatus status) => status switch
+    {
+        InvoiceStatus.Entwurf => "bg-secondary",
+        InvoiceStatus.Gestellt => "bg-primary",
+        InvoiceStatus.Bezahlt => "bg-success",
+        InvoiceStatus.Storniert => "bg-danger",
+        _ => "bg-secondary"
+    };
+}

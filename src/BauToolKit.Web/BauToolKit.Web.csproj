@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\BauToolKit.Application\BauToolKit.Application.csproj" />
     <ProjectReference Include="..\BauToolKit.Infrastructure\BauToolKit.Infrastructure.csproj" />
+    <ProjectReference Include="..\BauToolKit.Mobile\BauToolKit.Mobile.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
