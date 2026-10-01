@@ -1,2 +1,133 @@
-# blazor-portfolio
-Blazor Web App - Homepage and main platform for C# software development services
+# Blazor Portfolio & BauToolKit
+
+Dieses Repository umfasst die persönliche **Blazor Portfolio** Web-Applikation sowie das neue Projekt **BauToolKit** – ein plattformübergreifender Baustellen-Manager für Handwerks- und Bauunternehmen.
+
+---
+
+## BauToolKit – Baustellen-Manager
+
+### 1. Projektziel und Zielgruppen
+
+**BauToolKit** digitalisiert die Organisation von Baustellen, Materialflüssen, Arbeitszeiten und Fotodokumentationen zwischen Büro und Baustelle. Die Architektur basiert auf **.NET 8**, **Blazor Web App** und **.NET MAUI Blazor Hybrid**.
+
+**Zielgruppen:**
+- **Chefs / Bauleiter / Meister:** Haben die Gesamtübersicht im Büro oder auf dem Tablet über Kunden, Baustellen, Baufortschritt, Lagerbestand, Mitarbeiterzuweisungen und Rechnungen.
+- **Mitarbeiter / Handwerker vor Ort:** Können über Smartphone oder Tablet ihre zugewiesenen Baustellen einsehen, Material entnehmen oder buchen, Arbeitszeiten erfassen und Fotos direkt vor Ort hochladen.
+
+---
+
+### 2. Geplante Rollen und Berechtigungen
+
+- **Chef (`UserRole.Chef`):**
+  - Kundenverwaltung (Erstellen, Bearbeiten, Deaktivieren)
+  - Baustellenverwaltung & Überwachung des Baufortschritts
+  - Zuweisen von Mitarbeitern zu Baustellen
+  - Lagerverwaltung (Artikelbestand, Mindestmengen, Nachbestellungen)
+  - Rechnungsabwicklung (Abschlagsrechnungen, Schlussrechnungen)
+  - Einsicht in alle Zeiteinträge, Materialbuchungen und Bautagebücher/Fotos
+  - 3D-Aufmaß und Projektplanung (in Ausbaustufe 2)
+
+- **Mitarbeiter (`UserRole.Mitarbeiter`):**
+  - Zugriff auf die eigenen, aktiv zugewiesenen Baustellen
+  - Erfassung von Arbeitszeiten (Stunden, Tätigkeitsbeschreibung)
+  - Materialbuchungen (Entnahme aus Lager / Rückgabe)
+  - Upload von Baustellenfotos und Dokumentation vor Ort
+
+*(Hinweis: Keine unsichere Eigenbau-Authentifizierung. Das MVP nutzt klare Domänenrollen und bereitet den Einsatz von ASP.NET Core Identity vor.)*
+
+---
+
+### 3. MVP-Funktionsumfang
+
+Das vorliegende MVP-Fundament umfasst:
+1. **Kunden- und Baustellenverwaltung:** Stammdatenverwaltung von Kunden und Baustellen inklusive Status (`Planned`, `Active`, `Paused`, `Completed`, `Cancelled`).
+2. **Mitarbeiter-Zuweisung:** Zuweisung von Mitarbeitern zu Baustellen mit Notizen und Deaktivierungsmöglichkeit.
+3. **Lager- und Materialwirtschaft:** Erfassung von Lagerartikeln sowie Zu- und Abbuchungen (`Receipt`, `Issue`, `Return`, `Adjustment`) bezogen auf Baustellen.
+4. **Arbeitszeiterfassung:** Erfassung von Arbeitsstunden mit Tätigkeitsnachweis und Stundensätzen.
+5. **Fotodokumentation:** Upload, Verwaltung und Abruf von Baustellenfotos für Bautagebuch und Abnahmen.
+6. **Rechnungsgrundlagen:** Domänenmodelle für Rechnungen und Rechnungspositionen (Abschlags- und Schlussrechnungen).
+7. **Aufmaß-Fundament:** Datenstrukturen für Vermessungspunkte und Aufmaßprojekte als Vorbereitung für den 3D-Hausplaner.
+
+---
+
+### 4. Architektur und Solution-Struktur
+
+Die Solution folgt den Prinzipien der Clean Architecture mit modularen Schichten:
+
+```text
+blazor-portfolio/
+├── BauToolKit.sln                      # Haupt-Solution (enthält alle Projekte)
+├── blazor-portfolio.csproj             # Bestehende Portfolio Web App
+├── docs/
+│   └── BauToolKit-Projektidee.txt      # Ursprüngliche Vision & fachlicher Kontext
+├── src/
+│   ├── BauToolKit.Domain/              # Domänenmodelle & Enums (POCOs, keine externen Abhängigkeiten)
+│   ├── BauToolKit.Application/         # Schnittstellen, DTOs & Use-Case-Services
+│   ├── BauToolKit.Infrastructure/      # In-Memory-Persistenz & lokaler Dateispeicher
+│   ├── BauToolKit.Api/                 # ASP.NET Core Minimal API Backend
+│   ├── BauToolKit.Web/                 # Blazor Web App Frontend (Büro / Desktop)
+│   └── BauToolKit.Mobile/              # Blazor Hybrid Komponentenbibliothek (Mobile App)
+└── tests/
+    └── BauToolKit.UnitTests/           # Unit-Tests (xUnit, FluentAssertions, NSubstitute)
+```
+
+---
+
+### 5. Abgrenzung: 3D-Aufmaß / 3D-Hausplaner
+
+In der ursprünglichen Projektidee ist ein integrierter 3D-Hausplaner vorgesehen, bei dem vor Ort aufgemessen wird und die Anwendung ein 3D-Modell erzeugt.
+- **Aktueller Stand (MVP-Fundament):** Die Domänenmodelle `MeasurementProject` und `SurveyPoint` mit Statusverwaltung (`Draft`, `PointsRecorded`, `ModelGenerated`, `Exported`) sind angelegt, um Vermessungsdaten strukturiert zu speichern.
+- **Spätere Ausbaustufe (Phase 2):** Die konkrete 3D-Visualisierung (z. B. via Three.js / WebGL im Blazor-Frontend oder CAD-Import) und die Anbindung von Bluetooth-Messwerkzeugen (z. B. Laser-Distanzmessgeräte) werden als eigenständiges Modul in einer Folgestufe realisiert.
+
+---
+
+### 6. Lokale Start-, Build- und Test-Anweisungen
+
+#### Voraussetzungen
+- .NET 8 SDK (oder höher)
+
+#### Bauen der Solution
+```bash
+dotnet build BauToolKit.sln
+```
+
+#### Ausführen der Unit-Tests
+```bash
+dotnet test BauToolKit.sln
+```
+
+#### Backend API starten
+```bash
+dotnet run --project src/BauToolKit.Api
+```
+Die API stellt u. a. einen Status-Endpunkt unter `GET /api/status` sowie Endpunkte für Kunden, Baustellen, Zuweisungen, Lagerartikel, Arbeitszeiten und Fotodokumentation bereit.
+
+#### Blazor Web App starten
+```bash
+dotnet run --project src/BauToolKit.Web
+```
+
+#### Ursprüngliches Portfolio starten
+```bash
+dotnet run --project blazor-portfolio.csproj
+```
+
+---
+
+### 7. Coding Standards und Konventionen
+
+Entsprechend `.github/copilot-instructions.md`:
+- Target Framework: **.NET 8**
+- **File-scoped namespaces** in allen C#-Dateien
+- **Primary Constructors** für Dependency Injection
+- Strenge Nullable-Prüfung (**`#nullable enable`**)
+- Explizite Typen (`var` nur bei eindeutig erkennbarem Typ auf der rechten Seite)
+- Asynchrone Signaturen mit **`CancellationToken`** für alle I/O-Methoden
+- Test-Frameworks: **xUnit**, **FluentAssertions**, **NSubstitute**
+
+---
+
+### 8. Fachlicher Kontext für spätere Agents
+
+Die ungekürzte ursprüngliche Projektanfrage des Erstellers ist dokumentiert unter:
+`docs/BauToolKit-Projektidee.txt` (Stand: 1. Oktober 2026).

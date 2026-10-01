@@ -1,0 +1,51 @@
+@using BauToolKit.Domain.Models
+@using BauToolKit.Domain.Enums
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="card-title mb-0">@Site?.Title</h5>
+            <span class="badge @GetStatusBadgeClass(Site?.Status ?? ConstructionSiteStatus.Geplant)">
+                @Site?.Status
+            </span>
+        </div>
+        <p class="card-text text-muted mb-2">
+            <small>📍 @Site?.Street, @Site?.ZipCode @Site?.City</small>
+        </p>
+        <div class="progress mb-2" style="height: 8px;">
+            <div class="progress-bar bg-success" role="progressbar" style="width: @(Site?.ProgressPercentage ?? 0)%;" aria-valuenow="@(Site?.ProgressPercentage ?? 0)" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <div class="d-flex justify-content-between text-secondary">
+            <small>Fortschritt: @(Site?.ProgressPercentage ?? 0)%</small>
+            @if (OnSelect.HasDelegate)
+            {
+                <button class="btn btn-sm btn-outline-primary" @onclick="HandleSelect">Öffnen</button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public ConstructionSite? Site { get; set; }
+
+    [Parameter]
+    public EventCallback<ConstructionSite> OnSelect { get; set; }
+
+    private async Task HandleSelect()
+    {
+        if (Site is not null && OnSelect.HasDelegate)
+        {
+            await OnSelect.InvokeAsync(Site);
+        }
+    }
+
+    private static string GetStatusBadgeClass(ConstructionSiteStatus status) => status switch
+    {
+        ConstructionSiteStatus.Geplant => "bg-secondary",
+        ConstructionSiteStatus.InArbeit => "bg-primary",
+        ConstructionSiteStatus.Pausiert => "bg-warning text-dark",
+        ConstructionSiteStatus.Abgeschlossen => "bg-success",
+        _ => "bg-secondary"
+    };
+}
