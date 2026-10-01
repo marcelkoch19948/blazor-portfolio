@@ -21,7 +21,7 @@
 }
 
 .navbar-brand {
-    font-size: 1.1rem;
+    font-size: calc(1.1rem + 2px);
 }
 
 .bi {
@@ -47,7 +47,7 @@
 }
 
 .nav-item {
-    font-size: 0.9rem;
+    font-size: calc(0.9rem + 2px);
     padding-bottom: 0.5rem;
 }
 

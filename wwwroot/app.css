@@ -60,7 +60,7 @@ a {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 800;
     letter-spacing: -0.8px;
 }
@@ -73,7 +73,7 @@ a {
     border-radius: 10px;
     background: var(--ink);
     color: var(--green);
-    font: 500 13px 'DM Mono', monospace;
+    font: 500 15px 'DM Mono', monospace;
     letter-spacing: -1px;
 }
 
@@ -87,7 +87,7 @@ a {
     align-items: center;
     gap: 36px;
     color: #515c55;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
 }
 
@@ -127,7 +127,7 @@ a {
     align-items: center;
     gap: 9px;
     color: #657069;
-    font: 500 10px 'DM Mono', monospace;
+    font: 500 12px 'DM Mono', monospace;
     letter-spacing: 1.1px;
     text-transform: uppercase;
 }
@@ -157,7 +157,7 @@ a {
     max-width: 470px;
     margin: 0;
     color: var(--muted);
-    font-size: 15px;
+    font-size: 17px;
     line-height: 1.85;
 }
 
@@ -176,7 +176,7 @@ a {
     min-height: 48px;
     padding: 0 18px;
     border-radius: 5px;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 800;
     transition: transform .2s ease, background .2s ease;
 }
@@ -197,7 +197,7 @@ a {
 .hero-note {
     max-width: 165px;
     color: #7c867f;
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.6;
 }
 
@@ -207,13 +207,13 @@ a {
     gap: 12px;
     margin-top: 55px;
     color: #7a847d;
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.7;
 }
 
 .hero-proof strong {
     color: var(--ink);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .proof-icon {
@@ -305,13 +305,13 @@ a {
 
 .window-top small {
     margin-left: auto;
-    font: 10px 'DM Mono', monospace;
+    font: 12px 'DM Mono', monospace;
 }
 
 .code-content {
     padding: 31px 23px 28px;
     color: #d5dfd6;
-    font: 11px/2.35 'DM Mono', monospace;
+    font: 13px/2.35 'DM Mono', monospace;
     white-space: nowrap;
 }
 
@@ -352,7 +352,7 @@ a {
     padding-inline: 14px;
     border-top: 1px solid #334138;
     color: #95a198;
-    font: 9px 'DM Mono', monospace;
+    font: 11px 'DM Mono', monospace;
 }
 
 .window-status > span:first-child {
@@ -379,14 +379,14 @@ a {
     background: #fff;
     box-shadow: 0 12px 35px rgb(25 40 28 / 8%);
     color: #7c867f;
-    font-size: 9px;
+    font-size: 11px;
     line-height: 1.7;
     transform: rotate(2deg);
 }
 
 .floating-note strong {
     color: var(--ink);
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .note-check {
@@ -422,7 +422,7 @@ a {
     right: 10px;
     bottom: 8px;
     color: #7d887f;
-    font: 9px 'DM Mono', monospace;
+    font: 11px 'DM Mono', monospace;
     letter-spacing: .7px;
     text-transform: uppercase;
 }
@@ -458,7 +458,7 @@ a {
     max-width: 320px;
     margin: 0 0 5px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.85;
 }
 
@@ -490,7 +490,7 @@ a {
     align-items: center;
     justify-content: space-between;
     color: #849087;
-    font: 9px 'DM Mono', monospace;
+    font: 11px 'DM Mono', monospace;
     letter-spacing: .7px;
 }
 
@@ -581,7 +581,7 @@ a {
 .visual-flow {
     background: #f0f2fa;
     color: #6878ac;
-    font: 9px 'DM Mono', monospace;
+    font: 11px 'DM Mono', monospace;
 }
 
 .visual-flow > span {
@@ -609,7 +609,7 @@ a {
     border-radius: 50%;
     background: white;
     color: #a9763c;
-    font: 9px 'DM Mono', monospace;
+    font: 11px 'DM Mono', monospace;
 }
 
 .connect-center {
@@ -645,7 +645,7 @@ a {
     min-height: 57px;
     margin: 0;
     color: #758078;
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.75;
 }
 
@@ -661,7 +661,7 @@ a {
     border-radius: 3px;
     background: #f3f5f1;
     color: #6d786f;
-    font: 8px 'DM Mono', monospace;
+    font: 10px 'DM Mono', monospace;
 }
 
 .card-link {
@@ -672,7 +672,7 @@ a {
     padding-top: 16px;
     border-top: 1px solid #edf0eb;
     color: #37463b;
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 800;
 }
 
@@ -697,7 +697,7 @@ a {
     max-width: 350px;
     margin-top: 18px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.8;
 }
 
@@ -719,7 +719,7 @@ a {
 .step-number {
     padding-top: 2px;
     color: #8eaa6e;
-    font: 10px 'DM Mono', monospace;
+    font: 12px 'DM Mono', monospace;
 }
 
 .step h3 {
@@ -731,7 +731,7 @@ a {
 .step p {
     margin: 0;
     color: #79837c;
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.7;
 }
 
@@ -788,7 +788,7 @@ a {
     max-width: 550px;
     margin: 17px auto 23px;
     color: #c0c9c1;
-    font-size: 11px;
+    font-size: 13px;
     line-height: 1.85;
 }
 
@@ -809,7 +809,7 @@ a {
     padding-top: 19px;
     border-top: 1px solid rgb(255 255 255 / 12%);
     color: #b6c1b8;
-    font: 9px 'DM Mono', monospace;
+    font: 11px 'DM Mono', monospace;
 }
 
 .pricing-footnote span::before {
@@ -834,19 +834,19 @@ a {
     justify-content: space-between;
     border-top: 1px solid var(--line);
     color: #7c867f;
-    font-size: 9px;
+    font-size: 11px;
 }
 
 .site-footer .brand {
     color: var(--ink);
-    font-size: 14px;
+    font-size: 16px;
 }
 
 .site-footer .brand-mark {
     width: 29px;
     height: 29px;
     border-radius: 8px;
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .site-footer > a:last-child {
@@ -920,7 +920,7 @@ a {
 
     .main-nav .nav-cta {
         padding: 10px 12px;
-        font-size: 10px;
+        font-size: 12px;
     }
 
     .hero {
@@ -936,7 +936,7 @@ a {
 
     .hero-lede {
         max-width: 440px;
-        font-size: 13px;
+        font-size: 15px;
     }
 
     .hero-actions {
@@ -1021,7 +1021,7 @@ a {
     }
 
     .pricing-card > p {
-        font-size: 10px;
+        font-size: 12px;
     }
 
     .pricing-spark {
