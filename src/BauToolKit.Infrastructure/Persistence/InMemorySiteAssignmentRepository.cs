@@ -28,11 +28,11 @@ public class InMemorySiteAssignmentRepository : ISiteAssignmentRepository
         return Task.FromResult(list);
     }
 
-    public Task<SiteAssignment?> GetAsync(Guid siteId, Guid userId, CancellationToken cancellationToken = default)
+    public Task<SiteAssignment?> GetAsync(Guid siteId, Guid userId, bool includeInactive = false, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         SiteAssignment? assignment = _assignments.Values
-            .FirstOrDefault(a => a.ConstructionSiteId == siteId && a.UserId == userId);
+            .FirstOrDefault(a => a.ConstructionSiteId == siteId && a.UserId == userId && (includeInactive || a.IsActive));
         return Task.FromResult(assignment);
     }
 

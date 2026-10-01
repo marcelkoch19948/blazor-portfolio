@@ -39,7 +39,7 @@ public class SiteAssignmentService(
             throw new KeyNotFoundException($"Mitarbeiter mit Id '{userId}' wurde nicht gefunden.");
         }
 
-        SiteAssignment? existing = await assignmentRepository.GetAsync(siteId, userId, cancellationToken);
+        SiteAssignment? existing = await assignmentRepository.GetAsync(siteId, userId, includeInactive: true, cancellationToken);
         if (existing is not null)
         {
             if (existing.IsActive)

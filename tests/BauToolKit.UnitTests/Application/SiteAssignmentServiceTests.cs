@@ -72,7 +72,7 @@ public class SiteAssignmentServiceTests
 
         _siteRepo.GetByIdAsync(siteId, Arg.Any<CancellationToken>()).Returns(site);
         _userRepo.GetByIdAsync(userId, Arg.Any<CancellationToken>()).Returns(user);
-        _assignmentRepo.GetAsync(siteId, userId, Arg.Any<CancellationToken>()).Returns(existing);
+        _assignmentRepo.GetAsync(siteId, userId, Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(existing);
 
         // Act
         SiteAssignment result = await _sut.AssignEmployeeAsync(siteId, userId, null);
@@ -81,6 +81,39 @@ public class SiteAssignmentServiceTests
         result.Should().Be(existing);
         result.IsActive.Should().BeTrue();
         await _assignmentRepo.DidNotReceive().AddAsync(Arg.Any<SiteAssignment>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AssignEmployeeAsync_WhenInactiveAssignmentExists_ReactivatesAssignment()
+    {
+        // Arrange
+        Guid siteId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+
+        ConstructionSite site = new() { Id = siteId, Title = "Baustelle Süd" };
+        User user = new() { Id = userId, FirstName = "Max", LastName = "Mitarbeiter", Role = UserRole.Mitarbeiter };
+
+        SiteAssignment existingInactive = new()
+        {
+            ConstructionSiteId = siteId,
+            UserId = userId,
+            IsActive = false,
+            Notes = "Alte Zuweisung"
+        };
+
+        _siteRepo.GetByIdAsync(siteId, Arg.Any<CancellationToken>()).Returns(site);
+        _userRepo.GetByIdAsync(userId, Arg.Any<CancellationToken>()).Returns(user);
+        _assignmentRepo.GetAsync(siteId, userId, Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(existingInactive);
+        _assignmentRepo.UpdateAsync(Arg.Any<SiteAssignment>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo => callInfo.Arg<SiteAssignment>());
+
+        // Act
+        SiteAssignment result = await _sut.AssignEmployeeAsync(siteId, userId, null, "Reaktiviert");
+
+        // Assert
+        result.IsActive.Should().BeTrue();
+        result.Notes.Should().Be("Reaktiviert");
+        await _assignmentRepo.Received(1).UpdateAsync(existingInactive, Arg.Any<CancellationToken>());
     }
 
     [Fact]

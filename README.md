@@ -40,12 +40,12 @@ Dieses Repository umfasst die persönliche **Blazor Portfolio** Web-Applikation 
 ### 3. MVP-Funktionsumfang
 
 Das vorliegende MVP-Fundament umfasst:
-1. **Kunden- und Baustellenverwaltung:** Stammdatenverwaltung von Kunden und Baustellen inklusive Status (`Planned`, `Active`, `Paused`, `Completed`, `Cancelled`).
+1. **Kunden- und Baustellenverwaltung:** Stammdatenverwaltung von Kunden und Baustellen inklusive Status (`Geplant`, `InArbeit`, `Pausiert`, `Abgeschlossen`).
 2. **Mitarbeiter-Zuweisung:** Zuweisung von Mitarbeitern zu Baustellen mit Notizen und Deaktivierungsmöglichkeit.
-3. **Lager- und Materialwirtschaft:** Erfassung von Lagerartikeln sowie Zu- und Abbuchungen (`Receipt`, `Issue`, `Return`, `Adjustment`) bezogen auf Baustellen.
+3. **Lager- und Materialwirtschaft:** Erfassung von Lagerartikeln sowie Zu- und Abbuchungen (`Zugang`, `Verbrauch`, `Rueckgabe`) bezogen auf Baustellen.
 4. **Arbeitszeiterfassung:** Erfassung von Arbeitsstunden mit Tätigkeitsnachweis und Stundensätzen.
-5. **Fotodokumentation:** Upload, Verwaltung und Abruf von Baustellenfotos für Bautagebuch und Abnahmen.
-6. **Rechnungsgrundlagen:** Domänenmodelle für Rechnungen und Rechnungspositionen (Abschlags- und Schlussrechnungen).
+5. **Fotodokumentation:** Upload (multipart/form-data), Verwaltung und Abruf von Baustellenfotos für Bautagebuch und Abnahmen.
+6. **Rechnungsgrundlagen:** Domänenmodelle für Rechnungen und Rechnungspositionen (`Abschlagsrechnung`, `Schlussrechnung`, `Einzelforderung` mit Status `Entwurf`, `Gestellt`, `Bezahlt`, `Storniert`).
 7. **Aufmaß-Fundament:** Datenstrukturen für Vermessungspunkte und Aufmaßprojekte als Vorbereitung für den 3D-Hausplaner.
 
 ---
@@ -76,7 +76,7 @@ blazor-portfolio/
 ### 5. Abgrenzung: 3D-Aufmaß / 3D-Hausplaner
 
 In der ursprünglichen Projektidee ist ein integrierter 3D-Hausplaner vorgesehen, bei dem vor Ort aufgemessen wird und die Anwendung ein 3D-Modell erzeugt.
-- **Aktueller Stand (MVP-Fundament):** Die Domänenmodelle `MeasurementProject` und `SurveyPoint` mit Statusverwaltung (`Draft`, `PointsRecorded`, `ModelGenerated`, `Exported`) sind angelegt, um Vermessungsdaten strukturiert zu speichern.
+- **Aktueller Stand (MVP-Fundament):** Die Domänenmodelle `MeasurementProject` und `SurveyPoint` mit Statusverwaltung (`Erfasst`, `InBearbeitung`, `Exportiert`) sind angelegt, um Vermessungsdaten strukturiert zu speichern.
 - **Spätere Ausbaustufe (Phase 2):** Die konkrete 3D-Visualisierung (z. B. via Three.js / WebGL im Blazor-Frontend oder CAD-Import) und die Anbindung von Bluetooth-Messwerkzeugen (z. B. Laser-Distanzmessgeräte) werden als eigenständiges Modul in einer Folgestufe realisiert.
 
 ---

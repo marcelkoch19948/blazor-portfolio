@@ -172,13 +172,46 @@ app.MapGet("/api/sites/{siteId:guid}/photos", async (
 });
 
 app.MapPost("/api/photos", async (
-    PhotoUploadRequest request,
+    HttpRequest httpRequest,
     IPhotoDocumentationService photoService,
     CancellationToken ct) =>
 {
+    if (!httpRequest.HasFormContentType)
+    {
+        return Results.BadRequest("Erwartet multipart/form-data mit Datei und Metadaten.");
+    }
+
+    IFormCollection form = await httpRequest.ReadFormAsync(ct);
+    IFormFile? file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+    if (file is null || file.Length == 0)
+    {
+        return Results.BadRequest("Es wurde keine Datei übermittelt.");
+    }
+
+    if (!Guid.TryParse(form["siteId"], out Guid siteId))
+    {
+        return Results.BadRequest("Ungültige oder fehlende Baustellen-ID (siteId).");
+    }
+
+    if (!Guid.TryParse(form["userId"], out Guid userId))
+    {
+        return Results.BadRequest("Ungültige oder fehlende Mitarbeiter-ID (userId).");
+    }
+
+    string? description = form["description"];
+
+    await using Stream stream = file.OpenReadStream();
+    PhotoUploadRequest request = new(
+        ConstructionSiteId: siteId,
+        UploadedByUserId: userId,
+        FileName: file.FileName,
+        Content: stream,
+        Description: description
+    );
+
     PhotoDocumentation created = await photoService.AddPhotoAsync(request, ct);
     return Results.Created($"/api/photos/{created.Id}", created);
-});
+}).DisableAntiforgery();
 
 app.Run();
 
