@@ -8,7 +8,7 @@
     "net8.0": []
   },
   "packageFolders": {
-    "/tmp/codeql-scratch-d3a15ab015be6fd2/dbs/csharp/working/packages": {}
+    "/home/runner/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
@@ -16,7 +16,7 @@
       "projectUniqueName": "/home/runner/work/blazor-portfolio/blazor-portfolio/blazor-portfolio.csproj",
       "projectName": "blazor-portfolio",
       "projectPath": "/home/runner/work/blazor-portfolio/blazor-portfolio/blazor-portfolio.csproj",
-      "packagesPath": "/tmp/codeql-scratch-d3a15ab015be6fd2/dbs/csharp/working/packages",
+      "packagesPath": "/home/runner/.nuget/packages/",
       "outputPath": "/home/runner/work/blazor-portfolio/blazor-portfolio/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
@@ -62,20 +62,6 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
-        "downloadDependencies": [
-          {
-            "name": "Microsoft.AspNetCore.App.Ref",
-            "version": "[8.0.31, 8.0.31]"
-          },
-          {
-            "name": "Microsoft.NETCore.App.Host.linux-x64",
-            "version": "[8.0.31, 8.0.31]"
-          },
-          {
-            "name": "Microsoft.NETCore.App.Ref",
-            "version": "[8.0.31, 8.0.31]"
-          }
-        ],
         "frameworkReferences": {
           "Microsoft.AspNetCore.App": {
             "privateAssets": "none"

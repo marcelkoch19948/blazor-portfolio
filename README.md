@@ -66,7 +66,8 @@ blazor-portfolio/
 │   ├── BauToolKit.Infrastructure/      # In-Memory-Persistenz & lokaler Dateispeicher
 │   ├── BauToolKit.Api/                 # ASP.NET Core Minimal API Backend
 │   ├── BauToolKit.Web/                 # Blazor Web App Frontend (Büro / Desktop)
-│   └── BauToolKit.Mobile/              # Blazor Hybrid Komponentenbibliothek (Mobile App)
+│   ├── BauToolKit.Mobile/              # Blazor Hybrid Komponentenbibliothek (wiederverwendbar)
+│   └── BauToolKit.Mobile.Host/         # .NET MAUI Blazor Hybrid Host-App (Android, iOS, Windows)
 └── tests/
     └── BauToolKit.UnitTests/           # Unit-Tests (xUnit, FluentAssertions, NSubstitute)
 ```
@@ -111,6 +112,43 @@ dotnet run --project src/BauToolKit.Web
 ```bash
 dotnet run --project blazor-portfolio.csproj
 ```
+
+#### BauToolKit auf dem Smartphone testen
+
+Es gibt zwei Wege, BauToolKit auf dem Smartphone auszuprobieren:
+
+##### Option A: Sofort im mobilen Browser testen (ohne Installation)
+1. Starte die Web App im lokalen Netzwerk:
+   ```bash
+   dotnet run --project src/BauToolKit.Web --urls "http://0.0.0.0:5000"
+   ```
+2. Ermittle die lokale IP-Adresse deines Entwicklungsrechners (z. B. `192.168.178.50`).
+3. Verbinde dein Smartphone mit demselben WLAN-Netzwerk und rufe im mobilen Browser auf:
+   ```text
+   http://192.168.178.50:5000
+   ```
+   Die Blazor Web App ist responsiv optimiert und passt sich an Smartphone-Bildschirme an.
+
+##### Option B: Als native App (.NET MAUI Blazor Hybrid) installieren
+1. **Voraussetzung:** Installiere die .NET MAUI Workloads auf deinem Entwicklungs-PC:
+   ```bash
+   dotnet workload install maui
+   # oder gezielt für Android:
+   dotnet workload install maui-android
+   ```
+2. **Android Smartphone vorbereiten:**
+   - Aktiviere die *Entwickleroptionen* und *USB-Debugging* in den Android-Einstellungen.
+   - Schließe das Smartphone per USB-Kabel an den PC an.
+3. **App direkt auf dem angeschlossenen Smartphone oder Emulator ausführen:**
+   ```bash
+   dotnet build src/BauToolKit.Mobile.Host/BauToolKit.Mobile.Host.csproj -t:Run -f net8.0-android -p:BuildingForMaui=true
+   ```
+   *(Alternativ in Visual Studio: `BauToolKit.Mobile.Host` als Startprojekt festlegen, Zielplattform `net8.0-android` und das Smartphone als Zielgerät auswählen und auf „Starten“ drücken).*
+4. **Standalone APK zum manuellen Installieren bauen:**
+   ```bash
+   dotnet publish src/BauToolKit.Mobile.Host/BauToolKit.Mobile.Host.csproj -f net8.0-android -c Release -p:BuildingForMaui=true
+   ```
+   Die erzeugte `.apk`-Datei befindet sich in `src/BauToolKit.Mobile.Host/bin/Release/net8.0-android/publish/` und kann direkt auf das Smartphone kopiert und installiert werden.
 
 ---
 
