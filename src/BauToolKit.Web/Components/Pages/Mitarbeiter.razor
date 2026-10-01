@@ -1,0 +1,208 @@
+@page "/mitarbeiter"
+@rendermode InteractiveServer
+@inject IUserRepository UserRepository
+@inject ISiteAssignmentService AssignmentService
+@inject IConstructionSiteService SiteService
+
+<PageTitle>Mitarbeiter &amp; Zuweisungen - BauToolKit</PageTitle>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">👷 Mitarbeiter &amp; Baustellen-Zuweisung</h2>
+            <p class="text-muted mb-0">Übersicht aller Teammitglieder und Zuweisung zu den aktuellen Baustellen.</p>
+        </div>
+        <button class="btn btn-primary" @onclick="ToggleAssignModal">
+            + Neue Zuweisung
+        </button>
+    </div>
+
+    @if (ShowAssignModal)
+    {
+        <div class="card shadow-sm mb-4 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Mitarbeiter einer Baustelle zuweisen</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small">Mitarbeiter</label>
+                        <select class="form-select" @bind="SelectedUserIdString">
+                            <option value="">-- Mitarbeiter wählen --</option>
+                            @foreach (User u in Users.Where(u => u.IsActive))
+                            {
+                                <option value="@u.Id">@u.FullName (@u.Role)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small">Baustelle</label>
+                        <select class="form-select" @bind="SelectedSiteIdString">
+                            <option value="">-- Baustelle wählen --</option>
+                            @foreach (ConstructionSite s in Sites)
+                            {
+                                <option value="@s.Id">@s.Title (@s.City)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold small">Notiz / Aufgabe</label>
+                        <input type="text" class="form-control" placeholder="z. B. Rohbauleitung, Elektroinstallation" @bind="AssignmentNotes" />
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <div class="alert alert-danger py-2 mt-3 mb-0">@ErrorMessage</div>
+                }
+
+                <div class="mt-3 text-end">
+                    <button class="btn btn-secondary me-2" @onclick="ToggleAssignModal">Abbrechen</button>
+                    <button class="btn btn-success" @onclick="SaveAssignmentAsync">Zuweisen</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Lade Daten...</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (User user in Users)
+            {
+                IReadOnlyList<SiteAssignment> userAssignments = AssignmentsByUser.TryGetValue(user.Id, out IReadOnlyList<SiteAssignment>? list)
+                    ? list : Array.Empty<SiteAssignment>();
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h5 class="fw-bold mb-0">@user.FullName</h5>
+                                    <small class="text-muted">@user.Email</small>
+                                </div>
+                                <span class="badge @(user.IsChef ? "bg-warning text-dark" : "bg-info text-dark")">
+                                    @user.Role
+                                </span>
+                            </div>
+
+                            <div class="mt-3">
+                                <h6 class="small fw-bold text-secondary mb-2">Zugewiesene Baustellen:</h6>
+                                @if (userAssignments.Count == 0)
+                                {
+                                    <p class="text-muted small fst-italic mb-0">Aktuell keiner Baustelle zugewiesen.</p>
+                                }
+                                else
+                                {
+                                    <ul class="list-group list-group-flush small">
+                                        @foreach (SiteAssignment a in userAssignments)
+                                        {
+                                            ConstructionSite? site = Sites.FirstOrDefault(s => s.Id == a.ConstructionSiteId);
+                                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                                <div>
+                                                    <strong>@(site?.Title ?? "Baustelle")</strong>
+                                                    @if (!string.IsNullOrEmpty(a.Notes))
+                                                    {
+                                                        <br /><span class="text-muted">@a.Notes</span>
+                                                    }
+                                                </div>
+                                                <button class="btn btn-sm btn-outline-danger"
+                                                        title="Zuweisung aufheben"
+                                                        @onclick="@(async () => await DeactivateAssignmentAsync(a.Id))">
+                                                    &times;
+                                                </button>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<User> Users { get; set; } = Array.Empty<User>();
+    private IReadOnlyList<ConstructionSite> Sites { get; set; } = Array.Empty<ConstructionSite>();
+    private Dictionary<Guid, IReadOnlyList<SiteAssignment>> AssignmentsByUser { get; set; } = new();
+
+    private bool IsLoading { get; set; } = true;
+    private bool ShowAssignModal { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    private string SelectedUserIdString { get; set; } = string.Empty;
+    private string SelectedSiteIdString { get; set; } = string.Empty;
+    private string AssignmentNotes { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            Users = await UserRepository.GetAllAsync();
+            Sites = await SiteService.GetAllAsync();
+
+            AssignmentsByUser.Clear();
+            foreach (User u in Users)
+            {
+                IReadOnlyList<SiteAssignment> list = await AssignmentService.GetByUserIdAsync(u.Id);
+                AssignmentsByUser[u.Id] = list;
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ToggleAssignModal()
+    {
+        ShowAssignModal = !ShowAssignModal;
+        ErrorMessage = null;
+    }
+
+    private async Task SaveAssignmentAsync()
+    {
+        ErrorMessage = null;
+        if (!Guid.TryParse(SelectedUserIdString, out Guid userId))
+        {
+            ErrorMessage = "Bitte wähle einen Mitarbeiter aus.";
+            return;
+        }
+
+        if (!Guid.TryParse(SelectedSiteIdString, out Guid siteId))
+        {
+            ErrorMessage = "Bitte wähle eine Baustelle aus.";
+            return;
+        }
+
+        await AssignmentService.AssignEmployeeAsync(siteId, userId, null, AssignmentNotes);
+
+        SelectedUserIdString = string.Empty;
+        SelectedSiteIdString = string.Empty;
+        AssignmentNotes = string.Empty;
+        ShowAssignModal = false;
+
+        await LoadDataAsync();
+    }
+
+    private async Task DeactivateAssignmentAsync(Guid assignmentId)
+    {
+        await AssignmentService.DeactivateAssignmentAsync(assignmentId);
+        await LoadDataAsync();
+    }
+}

@@ -1,0 +1,270 @@
+@page "/zeiterfassung"
+@rendermode InteractiveServer
+@inject IWorkLogService WorkLogService
+@inject IConstructionSiteService SiteService
+@inject IUserRepository UserRepository
+
+<PageTitle>Zeiterfassung - BauToolKit</PageTitle>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">⏱️ Zeiterfassung &amp; Stundenzettel</h2>
+            <p class="text-muted mb-0">Erfassung von Arbeitszeiten und Tätigkeitsnachweisen auf Baustellen.</p>
+        </div>
+        <button class="btn btn-primary" @onclick="ToggleNewLogForm">
+            @(ShowNewLogForm ? "Abbrechen" : "+ Arbeitszeit erfassen")
+        </button>
+    </div>
+
+    @if (ShowNewLogForm)
+    {
+        <div class="card shadow-sm mb-4 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Neue Arbeitszeit buchen</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small">Mitarbeiter</label>
+                        <select class="form-select" @bind="SelectedUserIdString">
+                            <option value="">-- Mitarbeiter wählen --</option>
+                            @foreach (User u in Users)
+                            {
+                                <option value="@u.Id">@u.FullName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small">Baustelle</label>
+                        <select class="form-select" @bind="SelectedSiteIdString">
+                            <option value="">-- Baustelle wählen --</option>
+                            @foreach (ConstructionSite s in Sites)
+                            {
+                                <option value="@s.Id">@s.Title (@s.City)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small">Datum</label>
+                        <input type="date" class="form-control" @bind="LogDate" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small">Stunden</label>
+                        <input type="number" step="0.25" min="0.25" max="24" class="form-control" @bind="LogHours" />
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold small">Tätigkeitsbericht / Erledigte Arbeiten</label>
+                        <textarea class="form-control" rows="2" placeholder="z. B. Bewehrungsarbeiten Fundament, Verschalung gestellt..." @bind="LogActivity"></textarea>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <div class="alert alert-danger py-2 mt-3 mb-0">@ErrorMessage</div>
+                }
+
+                <div class="mt-3 text-end">
+                    <button class="btn btn-secondary me-2" @onclick="ToggleNewLogForm">Abbrechen</button>
+                    <button class="btn btn-success" @onclick="SaveLogAsync">Stunden buchen</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Lade Zeiteinträge...</p>
+        </div>
+    }
+    else
+    {
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 bg-light">
+                    <div class="card-body">
+                        <span class="text-muted small">Gesamtstunden:</span>
+                        <h3 class="fw-bold text-primary mb-0">@Logs.Sum(l => l.Hours) Std</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 bg-light">
+                    <div class="card-body">
+                        <span class="text-muted small">Freigegebene Einträge:</span>
+                        <h3 class="fw-bold text-success mb-0">@Logs.Count(l => l.IsApprovedByChef) / @Logs.Count</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 bg-light">
+                    <div class="card-body">
+                        <span class="text-muted small">Offene Freigaben:</span>
+                        <h3 class="fw-bold text-warning mb-0">@Logs.Count(l => !l.IsApprovedByChef)</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light">
+                <h5 class="mb-0 fw-bold">Erfasste Stundeneinträge</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Datum</th>
+                            <th>Mitarbeiter</th>
+                            <th>Baustelle</th>
+                            <th>Stunden</th>
+                            <th>Tätigkeit</th>
+                            <th>Status (Chef)</th>
+                            <th>Aktion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (WorkLog log in Logs)
+                        {
+                            User? user = Users.FirstOrDefault(u => u.Id == log.UserId);
+                            ConstructionSite? site = Sites.FirstOrDefault(s => s.Id == log.ConstructionSiteId);
+
+                            <tr>
+                                <td>@log.Date.ToString("dd.MM.yyyy")</td>
+                                <td><strong>@(user?.FullName ?? "Mitarbeiter")</strong></td>
+                                <td>@(site?.Title ?? "Baustelle")</td>
+                                <td class="fw-bold fs-6">@log.Hours.ToString("F2") Std</td>
+                                <td class="small">@log.ActivityDescription</td>
+                                <td>
+                                    @if (log.IsApprovedByChef)
+                                    {
+                                        <span class="badge bg-success">✓ Freigegeben</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">Ausstehend</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!log.IsApprovedByChef)
+                                    {
+                                        <button class="btn btn-sm btn-outline-success" @onclick="@(async () => await ApproveLogAsync(log.Id))">
+                                            Freigeben
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<WorkLog> Logs { get; set; } = Array.Empty<WorkLog>();
+    private IReadOnlyList<User> Users { get; set; } = Array.Empty<User>();
+    private IReadOnlyList<ConstructionSite> Sites { get; set; } = Array.Empty<ConstructionSite>();
+
+    private bool IsLoading { get; set; } = true;
+    private bool ShowNewLogForm { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    private string SelectedUserIdString { get; set; } = string.Empty;
+    private string SelectedSiteIdString { get; set; } = string.Empty;
+    private DateOnly LogDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+    private decimal LogHours { get; set; } = 8.0m;
+    private string LogActivity { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            Users = await UserRepository.GetAllAsync();
+            Sites = await SiteService.GetAllAsync();
+
+            var allLogs = new List<WorkLog>();
+            foreach (ConstructionSite site in Sites)
+            {
+                IReadOnlyList<WorkLog> siteLogs = await WorkLogService.GetBySiteIdAsync(site.Id);
+                allLogs.AddRange(siteLogs);
+            }
+            Logs = allLogs.OrderByDescending(l => l.Date).ThenByDescending(l => l.CreatedAtUtc).ToList();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ToggleNewLogForm()
+    {
+        ShowNewLogForm = !ShowNewLogForm;
+        ErrorMessage = null;
+    }
+
+    private async Task SaveLogAsync()
+    {
+        ErrorMessage = null;
+        if (!Guid.TryParse(SelectedUserIdString, out Guid userId))
+        {
+            ErrorMessage = "Bitte wähle einen Mitarbeiter aus.";
+            return;
+        }
+
+        if (!Guid.TryParse(SelectedSiteIdString, out Guid siteId))
+        {
+            ErrorMessage = "Bitte wähle eine Baustelle aus.";
+            return;
+        }
+
+        if (LogHours <= 0 || LogHours > 24)
+        {
+            ErrorMessage = "Stunden müssen zwischen 0.25 und 24 liegen.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(LogActivity))
+        {
+            ErrorMessage = "Bitte gib eine Tätigkeitsbeschreibung ein.";
+            return;
+        }
+
+        try
+        {
+            var req = new WorkLogRequest(
+                UserId: userId,
+                ConstructionSiteId: siteId,
+                Date: LogDate,
+                Hours: LogHours,
+                ActivityDescription: LogActivity.Trim()
+            );
+
+            await WorkLogService.LogHoursAsync(req);
+
+            LogActivity = string.Empty;
+            ShowNewLogForm = false;
+
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
+
+    private async Task ApproveLogAsync(Guid logId)
+    {
+        await WorkLogService.ApproveHoursAsync(logId);
+        await LoadDataAsync();
+    }
+}

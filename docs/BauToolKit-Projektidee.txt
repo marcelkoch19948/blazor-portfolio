@@ -1,0 +1,11 @@
+# BauToolKit – Ursprüngliche Projektidee und Kontext
+
+Datum: 1. Oktober 2026
+
+Hinweis: Diese Datei dient als dauerhafter fachlicher Kontext und Referenz für spätere Agents und Entwickler, um die ursprünglichen Anforderungen und Absichten des Nutzers im Originalwortlaut nachzuvollziehen.
+
+---
+
+Ursprüngliche Nutzeranfrage:
+
+„Hi ich habe eine Neue Projekt Idee, einen Baustellen Manager(BautoolKit) Das Ganze soll so Funktionieren das es in .Net Maui Blazor Hybrid and Web App Entwickelt wird, mit C# und Blazor, es soll einen zugang für den/die Scheff/s geben und einen zugang für jeden Mitarbeiter, jeder soll dan ganz einfach per Smarthphone oder Tablett oder Desktop Pc sehen Können was aktuell noch im Lager verfügbar ist, Die Scheffs haben eine Übersicht aller Kunden und Baustellen sowie den Baufortschritt und können Rechnungen und zwischen Rechnungen ganz einfach dort abwickeln, Die Scheffs weisen jedem einzelnen Mitarbeiter über das Programm eine Baustelle zu die dieser dann auf seinem Smartphone bzw. Tablet über die App abrufen kann, dort kann der Mitarbeiter Material und Stunden sowie gegebenfalls Bilder Integrieren. auch soll das Programm für die Scheffs ein 3D Hausplaner enthalten, der Scheff soll mit einem Vermessungswerkzeug zur baustelle fahren und dort aufmaß machen und das Programm erstellt dann ein 3D Projekt.“

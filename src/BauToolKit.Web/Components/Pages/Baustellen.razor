@@ -1,0 +1,296 @@
+@page "/baustellen"
+@rendermode InteractiveServer
+@inject IConstructionSiteService SiteService
+@inject ICustomerService CustomerService
+@inject ISiteAssignmentService AssignmentService
+@inject IUserRepository UserRepository
+
+<PageTitle>Baustellen &amp; Kunden - BauToolKit</PageTitle>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">🏗️ Baustellen-Übersicht</h2>
+            <p class="text-muted mb-0">Zentrales Management für Bauprojekte, Status, Fortschritt und Mitarbeiterzuweisungen.</p>
+        </div>
+        <button class="btn btn-primary" @onclick="ToggleNewSiteForm">
+            @(ShowNewSiteForm ? "Abbrechen" : "+ Neue Baustelle anlegen")
+        </button>
+    </div>
+
+    @if (ShowNewSiteForm)
+    {
+        <div class="card shadow-sm mb-4 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Neue Baustelle erfassen</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small">Kunde / Auftraggeber</label>
+                        <select class="form-select" @bind="NewSiteCustomerIdString">
+                            <option value="">-- Bitte Kunde wählen --</option>
+                            @foreach (Customer c in Customers)
+                            {
+                                <option value="@c.Id">@c.Name (@c.City)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small">Bezeichnung / Titel</label>
+                        <input type="text" class="form-control" placeholder="z. B. Neubau Einfamilienhaus" @bind="NewSiteTitle" />
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold small">Beschreibung</label>
+                        <textarea class="form-control" rows="2" placeholder="Projektumfang und Besonderheiten" @bind="NewSiteDescription"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small">Straße &amp; Hausnummer</label>
+                        <input type="text" class="form-control" placeholder="Musterstr. 1" @bind="NewSiteStreet" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small">PLZ</label>
+                        <input type="text" class="form-control" placeholder="12345" @bind="NewSiteZipCode" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small">Ort</label>
+                        <input type="text" class="form-control" placeholder="Musterstadt" @bind="NewSiteCity" />
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <div class="alert alert-danger py-2 mt-3 mb-0">@ErrorMessage</div>
+                }
+
+                <div class="mt-3 text-end">
+                    <button class="btn btn-secondary me-2" @onclick="ToggleNewSiteForm">Abbrechen</button>
+                    <button class="btn btn-success" @onclick="CreateSiteAsync">Baustelle speichern</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Lade Baustellen...</p>
+        </div>
+    }
+    else if (Sites.Count == 0)
+    {
+        <div class="alert alert-info">
+            Noch keine Baustellen vorhanden. Klicke auf „+ Neue Baustelle anlegen“, um zu beginnen.
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (ConstructionSite site in Sites)
+            {
+                Customer? customer = Customers.FirstOrDefault(c => c.Id == site.CustomerId);
+                IReadOnlyList<SiteAssignment> assignments = SiteAssignments.TryGetValue(site.Id, out IReadOnlyList<SiteAssignment>? list)
+                    ? list : Array.Empty<SiteAssignment>();
+
+                <div class="col-lg-6">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title fw-bold text-dark mb-0">@site.Title</h5>
+                                <span class="badge @GetStatusBadge(site.Status)">@site.Status</span>
+                            </div>
+
+                            <p class="text-muted small mb-2">
+                                <strong>Kunde:</strong> @(customer?.Name ?? "Unbekannt") &bull;
+                                <strong>Ort:</strong> @site.FullAddress
+                            </p>
+
+                            @if (!string.IsNullOrWhiteSpace(site.Description))
+                            {
+                                <p class="card-text text-secondary small mb-3">@site.Description</p>
+                            }
+
+                            <!-- Baufortschritt -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="small fw-bold">Baufortschritt:</span>
+                                    <span class="small fw-bold text-primary">@site.ProgressPercentage %</span>
+                                </div>
+                                <div class="progress" style="height: 10px;">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: @(site.ProgressPercentage)%;" aria-valuenow="@site.ProgressPercentage" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </div>
+
+                            <!-- Fortschritt aktualisieren & Status -->
+                            <div class="p-2 bg-light rounded mb-3">
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-auto">
+                                        <label class="small text-muted">Fortschritt:</label>
+                                    </div>
+                                    <div class="col">
+                                        <input type="range" class="form-range" min="0" max="100" step="5"
+                                               value="@site.ProgressPercentage"
+                                               @onchange="@(async (ChangeEventArgs e) => await OnProgressSliderChange(site, e))" />
+                                    </div>
+                                    <div class="col-auto">
+                                        <select class="form-select form-select-sm"
+                                                value="@site.Status"
+                                                @onchange="@(async (ChangeEventArgs e) => await OnStatusChange(site, e))">
+                                            @foreach (ConstructionSiteStatus st in Enum.GetValues<ConstructionSiteStatus>())
+                                            {
+                                                <option value="@st">@st</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Zugewiesene Mitarbeiter -->
+                            <div>
+                                <h6 class="small fw-bold text-secondary mb-1">👷 Zugewiesene Mitarbeiter:</h6>
+                                @if (assignments.Count == 0)
+                                {
+                                    <span class="text-muted small fst-italic">Noch keine Mitarbeiter zugewiesen.</span>
+                                }
+                                else
+                                {
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @foreach (SiteAssignment a in assignments)
+                                        {
+                                            User? emp = Users.FirstOrDefault(u => u.Id == a.UserId);
+                                            <span class="badge bg-secondary">
+                                                @(emp?.FullName ?? "Mitarbeiter")
+                                                @if (!string.IsNullOrEmpty(a.Notes))
+                                                {
+                                                    <small> (@a.Notes)</small>
+                                                }
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<ConstructionSite> Sites { get; set; } = Array.Empty<ConstructionSite>();
+    private IReadOnlyList<Customer> Customers { get; set; } = Array.Empty<Customer>();
+    private IReadOnlyList<User> Users { get; set; } = Array.Empty<User>();
+    private Dictionary<Guid, IReadOnlyList<SiteAssignment>> SiteAssignments { get; set; } = new();
+
+    private bool IsLoading { get; set; } = true;
+    private bool ShowNewSiteForm { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    private string NewSiteCustomerIdString { get; set; } = string.Empty;
+    private string NewSiteTitle { get; set; } = string.Empty;
+    private string NewSiteDescription { get; set; } = string.Empty;
+    private string NewSiteStreet { get; set; } = string.Empty;
+    private string NewSiteZipCode { get; set; } = string.Empty;
+    private string NewSiteCity { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            Sites = await SiteService.GetAllAsync();
+            Customers = await CustomerService.GetAllAsync();
+            Users = await UserRepository.GetAllAsync();
+
+            SiteAssignments.Clear();
+            foreach (ConstructionSite site in Sites)
+            {
+                IReadOnlyList<SiteAssignment> list = await AssignmentService.GetBySiteIdAsync(site.Id);
+                SiteAssignments[site.Id] = list;
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ToggleNewSiteForm()
+    {
+        ShowNewSiteForm = !ShowNewSiteForm;
+        ErrorMessage = null;
+    }
+
+    private async Task CreateSiteAsync()
+    {
+        ErrorMessage = null;
+        if (!Guid.TryParse(NewSiteCustomerIdString, out Guid customerId))
+        {
+            ErrorMessage = "Bitte wähle einen Kunden aus.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(NewSiteTitle))
+        {
+            ErrorMessage = "Bitte gib eine Bezeichnung für die Baustelle ein.";
+            return;
+        }
+
+        var newSite = new ConstructionSite
+        {
+            CustomerId = customerId,
+            Title = NewSiteTitle.Trim(),
+            Description = NewSiteDescription.Trim(),
+            Street = NewSiteStreet.Trim(),
+            ZipCode = NewSiteZipCode.Trim(),
+            City = NewSiteCity.Trim(),
+            Status = ConstructionSiteStatus.Geplant
+        };
+
+        await SiteService.CreateAsync(newSite);
+
+        NewSiteCustomerIdString = string.Empty;
+        NewSiteTitle = string.Empty;
+        NewSiteDescription = string.Empty;
+        NewSiteStreet = string.Empty;
+        NewSiteZipCode = string.Empty;
+        NewSiteCity = string.Empty;
+        ShowNewSiteForm = false;
+
+        await LoadDataAsync();
+    }
+
+    private async Task OnProgressSliderChange(ConstructionSite site, ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int percentage))
+        {
+            await SiteService.UpdateProgressAsync(site.Id, percentage);
+            await LoadDataAsync();
+        }
+    }
+
+    private async Task OnStatusChange(ConstructionSite site, ChangeEventArgs e)
+    {
+        if (Enum.TryParse<ConstructionSiteStatus>(e.Value?.ToString(), out ConstructionSiteStatus newStatus))
+        {
+            await SiteService.ChangeStatusAsync(site.Id, newStatus);
+            await LoadDataAsync();
+        }
+    }
+
+    private static string GetStatusBadge(ConstructionSiteStatus status) => status switch
+    {
+        ConstructionSiteStatus.Geplant => "bg-secondary",
+        ConstructionSiteStatus.InArbeit => "bg-primary",
+        ConstructionSiteStatus.Pausiert => "bg-warning text-dark",
+        ConstructionSiteStatus.Abgeschlossen => "bg-success",
+        _ => "bg-secondary"
+    };
+}

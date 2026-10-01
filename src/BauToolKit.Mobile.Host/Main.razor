@@ -1,0 +1,275 @@
+@inject IConstructionSiteService SiteService
+@inject ISiteAssignmentService AssignmentService
+@inject IWorkLogService WorkLogService
+@inject IInventoryService InventoryService
+@inject IUserRepository UserRepository
+
+<div class="d-flex flex-column h-100">
+    <!-- Mobile App Header -->
+    <header class="bg-primary text-white p-3 shadow-sm sticky-top">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">🔨 BauToolKit Mobile</h5>
+            @if (CurrentUser is not null)
+            {
+                <span class="badge bg-light text-primary">@CurrentUser.FullName</span>
+            }
+        </div>
+        @if (Users.Count > 1)
+        {
+            <div class="mt-2">
+                <select class="form-select form-select-sm bg-light text-dark border-0" @onchange="OnUserChanged">
+                    @foreach (User u in Users)
+                    {
+                        <option value="@u.Id" selected="@(u.Id == CurrentUserId)">👤 Angemeldet als: @u.FullName (@u.Role)</option>
+                    }
+                </select>
+            </div>
+        }
+    </header>
+
+    <!-- Notification Toast / Message -->
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show m-2 mb-0 py-2 small" role="alert">
+            <strong>✓ </strong> @SuccessMessage
+            <button type="button" class="btn-close py-2" @onclick="() => SuccessMessage = null"></button>
+        </div>
+    }
+
+    <!-- Tab Content -->
+    <main class="flex-grow-1 overflow-auto p-3">
+        @if (IsLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted small">Lade Daten...</p>
+            </div>
+        }
+        else if (ActiveTab == "sites")
+        {
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-secondary">Zugewiesene Baustellen (@AssignedSites.Count)</h6>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshDataAsync">🔄 Aktualisieren</button>
+            </div>
+
+            @if (!AssignedSites.Any())
+            {
+                <div class="card p-4 text-center text-muted border-dashed">
+                    <p class="mb-0">Keine aktiven Baustellen für diesen Mitarbeiter zugewiesen.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (ConstructionSite site in AssignedSites)
+                {
+                    <MobileSiteCard Site="site" OnSelect="SelectSite" />
+                }
+            }
+
+            @if (SelectedSite is not null)
+            {
+                <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-light">
+                                <h6 class="modal-title fw-bold">@SelectedSite.Title</h6>
+                                <button type="button" class="btn-close" @onclick="() => SelectedSite = null"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="small text-muted mb-2">📍 @SelectedSite.Street, @SelectedSite.ZipCode @SelectedSite.City</p>
+                                <p class="small mb-2">Status: <span class="badge bg-primary">@SelectedSite.Status</span></p>
+                                <p class="small mb-3">Fortschritt: <strong>@SelectedSite.ProgressPercentage %</strong></p>
+                                
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary btn-sm" @onclick='() => SwitchToTab("hours")'>
+                                        ⏱️ Stunden auf diese Baustelle buchen
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" @onclick='() => SwitchToTab("materials")'>
+                                        📦 Material verbuchen
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="modal-footer py-1">
+                                <button type="button" class="btn btn-sm btn-secondary" @onclick="() => SelectedSite = null">Schließen</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else if (ActiveTab == "hours")
+        {
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Aktive Baustelle für Zeiterfassung</label>
+                <select class="form-select form-select-sm" @bind="ActiveSiteIdString">
+                    @foreach (ConstructionSite s in AssignedSites)
+                    {
+                        <option value="@s.Id">@s.Title (@s.City)</option>
+                    }
+                </select>
+            </div>
+
+            @if (CurrentSiteId != Guid.Empty && CurrentUserId != Guid.Empty)
+            {
+                <MobileWorkLogForm SiteId="CurrentSiteId" UserId="CurrentUserId" OnSubmit="HandleWorkLogSubmitted" />
+            }
+        }
+        else if (ActiveTab == "materials")
+        {
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Aktive Baustelle für Materialbuchung</label>
+                <select class="form-select form-select-sm" @bind="ActiveSiteIdString">
+                    @foreach (ConstructionSite s in AssignedSites)
+                    {
+                        <option value="@s.Id">@s.Title (@s.City)</option>
+                    }
+                </select>
+            </div>
+
+            @if (CurrentSiteId != Guid.Empty && CurrentUserId != Guid.Empty)
+            {
+                <MobileMaterialBookingForm SiteId="CurrentSiteId" UserId="CurrentUserId" Items="InventoryItems" OnSubmit="HandleMaterialBooked" />
+            }
+        }
+    </main>
+
+    <!-- Bottom Navigation Bar for Mobile -->
+    <nav class="bg-white border-top py-2 px-3 shadow-lg">
+        <div class="row text-center g-0">
+            <div class="col-4">
+                <button class="btn btn-link w-100 p-0 text-decoration-none @(ActiveTab == "sites" ? "text-primary fw-bold" : "text-muted")"
+                        @onclick='() => ActiveTab = "sites"'>
+                    <div class="fs-5">🏗️</div>
+                    <div class="small" style="font-size: 0.75rem;">Baustellen</div>
+                </button>
+            </div>
+            <div class="col-4">
+                <button class="btn btn-link w-100 p-0 text-decoration-none @(ActiveTab == "hours" ? "text-primary fw-bold" : "text-muted")"
+                        @onclick='() => ActiveTab = "hours"'>
+                    <div class="fs-5">⏱️</div>
+                    <div class="small" style="font-size: 0.75rem;">Stunden</div>
+                </button>
+            </div>
+            <div class="col-4">
+                <button class="btn btn-link w-100 p-0 text-decoration-none @(ActiveTab == "materials" ? "text-primary fw-bold" : "text-muted")"
+                        @onclick='() => ActiveTab = "materials"'>
+                    <div class="fs-5">📦</div>
+                    <div class="small" style="font-size: 0.75rem;">Material</div>
+                </button>
+            </div>
+        </div>
+    </nav>
+</div>
+
+@code {
+    private string ActiveTab { get; set; } = "sites";
+    private bool IsLoading { get; set; } = true;
+    private string? SuccessMessage { get; set; }
+
+    private IReadOnlyList<User> Users { get; set; } = Array.Empty<User>();
+    private IReadOnlyList<ConstructionSite> AllSites { get; set; } = Array.Empty<ConstructionSite>();
+    private IReadOnlyList<ConstructionSite> AssignedSites { get; set; } = Array.Empty<ConstructionSite>();
+    private IReadOnlyList<InventoryItem> InventoryItems { get; set; } = Array.Empty<InventoryItem>();
+
+    private Guid CurrentUserId { get; set; }
+    private User? CurrentUser => Users.FirstOrDefault(u => u.Id == CurrentUserId);
+
+    private ConstructionSite? SelectedSite { get; set; }
+    private string ActiveSiteIdString { get; set; } = string.Empty;
+    private Guid CurrentSiteId => Guid.TryParse(ActiveSiteIdString, out Guid sid) ? sid : (AssignedSites.FirstOrDefault()?.Id ?? Guid.Empty);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInitialDataAsync();
+    }
+
+    private async Task LoadInitialDataAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            Users = await UserRepository.GetAllAsync();
+            AllSites = await SiteService.GetAllAsync();
+            InventoryItems = await InventoryService.GetAllItemsAsync();
+
+            // Default to first employee or chef
+            User? initialUser = Users.FirstOrDefault(u => u.Role == UserRole.Mitarbeiter) ?? Users.FirstOrDefault();
+            if (initialUser is not null)
+            {
+                CurrentUserId = initialUser.Id;
+                await UpdateAssignedSitesAsync();
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task OnUserChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out Guid uid))
+        {
+            CurrentUserId = uid;
+            await UpdateAssignedSitesAsync();
+        }
+    }
+
+    private async Task UpdateAssignedSitesAsync()
+    {
+        if (CurrentUserId == Guid.Empty) return;
+
+        User? u = Users.FirstOrDefault(x => x.Id == CurrentUserId);
+        if (u?.Role == UserRole.Chef)
+        {
+            // Chefs see all sites
+            AssignedSites = AllSites;
+        }
+        else
+        {
+            IReadOnlyList<SiteAssignment> assignments = await AssignmentService.GetByUserIdAsync(CurrentUserId);
+            var assignedSiteIds = assignments.Where(a => a.IsActive).Select(a => a.ConstructionSiteId).ToHashSet();
+            AssignedSites = AllSites.Where(s => assignedSiteIds.Contains(s.Id)).ToList();
+        }
+
+        if (AssignedSites.Any() && string.IsNullOrEmpty(ActiveSiteIdString))
+        {
+            ActiveSiteIdString = AssignedSites.First().Id.ToString();
+        }
+    }
+
+    private async Task RefreshDataAsync()
+    {
+        AllSites = await SiteService.GetAllAsync();
+        InventoryItems = await InventoryService.GetAllItemsAsync();
+        await UpdateAssignedSitesAsync();
+        SuccessMessage = "Daten aktualisiert.";
+    }
+
+    private void SelectSite(ConstructionSite site)
+    {
+        SelectedSite = site;
+        ActiveSiteIdString = site.Id.ToString();
+    }
+
+    private void SwitchToTab(string tab)
+    {
+        SelectedSite = null;
+        ActiveTab = tab;
+    }
+
+    private async Task HandleWorkLogSubmitted(WorkLogRequest request)
+    {
+        await WorkLogService.LogHoursAsync(request);
+        SuccessMessage = $"{request.Hours} Stunden für {request.Date.ToString("dd.MM.yyyy")} erfolgreich gebucht!";
+        ActiveTab = "sites";
+    }
+
+    private async Task HandleMaterialBooked(MaterialBookingRequest request)
+    {
+        await InventoryService.BookMaterialAsync(request);
+        InventoryItems = await InventoryService.GetAllItemsAsync();
+        SuccessMessage = $"Materialbuchung über {request.Quantity} Einheiten erfolgreich erfasst!";
+        ActiveTab = "sites";
+    }
+}

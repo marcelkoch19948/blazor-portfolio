@@ -1,0 +1,77 @@
+@using BauToolKit.Application.DTOs
+@using BauToolKit.Domain.Models
+
+<div class="card shadow-sm border-0 mb-3">
+    <div class="card-header bg-primary text-white py-2">
+        <h6 class="mb-0">⏱️ Arbeitszeit erfassen</h6>
+    </div>
+    <div class="card-body">
+        <div class="mb-3">
+            <label class="form-label small fw-bold">Datum</label>
+            <input type="date" class="form-control" @bind="LogDate" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label small fw-bold">Stunden</label>
+            <input type="number" step="0.25" min="0.25" max="24" class="form-control" @bind="Hours" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label small fw-bold">Tätigkeitsbeschreibung</label>
+            <textarea class="form-control" rows="2" placeholder="z. B. Verschalung fertiggestellt..." @bind="ActivityDescription"></textarea>
+        </div>
+
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="alert alert-danger py-1 small mb-3">@ErrorMessage</div>
+        }
+
+        <button class="btn btn-primary w-100" @onclick="SubmitForm">
+            Stunden buchen
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Guid SiteId { get; set; }
+
+    [Parameter]
+    public Guid UserId { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkLogRequest> OnSubmit { get; set; }
+
+    private DateOnly LogDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+    private decimal Hours { get; set; } = 8.0m;
+    private string ActivityDescription { get; set; } = string.Empty;
+    private string? ErrorMessage { get; set; }
+
+    private async Task SubmitForm()
+    {
+        ErrorMessage = null;
+        if (Hours <= 0 || Hours > 24)
+        {
+            ErrorMessage = "Stunden müssen zwischen 0.25 und 24 liegen.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(ActivityDescription))
+        {
+            ErrorMessage = "Bitte gib eine kurze Tätigkeitsbeschreibung ein.";
+            return;
+        }
+
+        var request = new WorkLogRequest(
+            UserId: UserId,
+            ConstructionSiteId: SiteId,
+            Date: LogDate,
+            Hours: Hours,
+            ActivityDescription: ActivityDescription.Trim()
+        );
+
+        if (OnSubmit.HasDelegate)
+        {
+            await OnSubmit.InvokeAsync(request);
+            ActivityDescription = string.Empty;
+        }
+    }
+}
