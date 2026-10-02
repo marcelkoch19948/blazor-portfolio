@@ -1,0 +1,337 @@
+@page "/badplaner"
+@rendermode InteractiveServer
+
+<PageTitle>3D-Badplaner - BauToolKit</PageTitle>
+
+<div class="container py-4 bath-planner">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+        <div>
+            <div class="eyebrow">Raumplanung · Ausbaustufe 2</div>
+            <h1 class="h2 fw-bold mb-1">3D-Badplaner</h1>
+            <p class="text-muted mb-0">Raummaße anpassen, Sanitärobjekte platzieren und den Entwurf direkt prüfen.</p>
+        </div>
+        <button class="btn btn-outline-secondary" @onclick="ResetPlan">Entwurf zurücksetzen</button>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-8">
+            <section class="card border-0 h-100" aria-label="3D-Vorschau des Badezimmers">
+                <div class="card-header bg-white d-flex flex-wrap align-items-center justify-content-between gap-2 py-3">
+                    <h2 class="h6 fw-bold mb-0">Raumansicht</h2>
+                    <span class="bath-room-size">@RoomWidth.ToString("F1") × @RoomDepth.ToString("F1") × @RoomHeight.ToString("F1") m</span>
+                </div>
+                <div class="bath-plan-canvas">
+                    <svg viewBox="0 0 760 500" role="img" aria-label="@($"Isometrische Raumansicht, {RoomWidth:F1} mal {RoomDepth:F1} Meter")">
+                        <defs>
+                            <linearGradient id="bath-floor" x1="0" x2="1" y1="0" y2="1">
+                                <stop offset="0%" stop-color="#e9e5da" />
+                                <stop offset="100%" stop-color="#d8d2c5" />
+                            </linearGradient>
+                            <linearGradient id="bath-wall" x1="0" x2="0" y1="0" y2="1">
+                                <stop offset="0%" stop-color="#f7f5ef" />
+                                <stop offset="100%" stop-color="#e9e5dc" />
+                            </linearGradient>
+                        </defs>
+                        <polygon points="@RoomWallYZero()" class="bath-back-wall" />
+                        <polygon points="@RoomWallXZero()" class="bath-side-wall" />
+                        <polygon points="@RoomFloor()" class="bath-floor" />
+                        @for (decimal x = 0.5m; x < RoomWidth; x += 0.5m)
+                        {
+                            <line x1="@Px(x, 0, 0)" y1="@Py(x, 0, 0)" x2="@Px(x, RoomDepth, 0)" y2="@Py(x, RoomDepth, 0)" class="bath-tile-line" />
+                        }
+                        @for (decimal y = 0.5m; y < RoomDepth; y += 0.5m)
+                        {
+                            <line x1="@Px(0, y, 0)" y1="@Py(0, y, 0)" x2="@Px(RoomWidth, y, 0)" y2="@Py(RoomWidth, y, 0)" class="bath-tile-line" />
+                        }
+                        @foreach (BathroomFixture fixture in Fixtures)
+                        {
+                            <g class="bath-fixture @(SelectedFixtureId == fixture.Id ? "is-selected" : "")"
+                               role="button"
+                               tabindex="0"
+                               aria-label="@($"Objekt auswählen: {fixture.Name}")"
+                               @onclick="() => SelectFixture(fixture.Id)"
+                               @onkeydown="(KeyboardEventArgs args) => OnFixtureKeyDown(args, fixture.Id)">
+                                <polygon points="@FixtureSideX(fixture)" fill="@ShadeColor(fixture.Color, .72)" />
+                                <polygon points="@FixtureSideY(fixture)" fill="@ShadeColor(fixture.Color, .86)" />
+                                <polygon points="@FixtureTop(fixture)" fill="@fixture.Color" />
+                                <text x="@Px(fixture.X + fixture.Width / 2, fixture.Y + fixture.Depth / 2, fixture.Height + .04m)"
+                                      y="@Py(fixture.X + fixture.Width / 2, fixture.Y + fixture.Depth / 2, fixture.Height + .04m)"
+                                      class="bath-fixture-label">@fixture.ShortName</text>
+                            </g>
+                        }
+                        <polyline points="@RoomOutline()" class="bath-room-outline" />
+                        <text x="@(Px(RoomWidth / 2, 0, 0) + 12)" y="@(Py(RoomWidth / 2, 0, 0) - 8)" class="bath-dimension-label">@RoomWidth.ToString("F1") m</text>
+                        <text x="@(Px(0, RoomDepth / 2, 0) - 42)" y="@(Py(0, RoomDepth / 2, 0) + 4)" class="bath-dimension-label">@RoomDepth.ToString("F1") m</text>
+                        <ellipse cx="380" cy="445" rx="180" ry="16" fill="rgba(41,42,40,.08)" />
+                    </svg>
+                </div>
+                <div class="card-footer bg-white d-flex flex-wrap justify-content-between gap-2 small text-muted">
+                    <span>Klicke ein Objekt im Modell an, um seine Position anzupassen.</span>
+                    <span>@Fixtures.Count Objekt(e) platziert</span>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="d-grid gap-4">
+                <section class="card border-0">
+                    <div class="card-header bg-white py-3">
+                        <h2 class="h6 fw-bold mb-0">Raummaße</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-4">
+                                <label for="room-width" class="form-label small fw-semibold">Breite (m)</label>
+                                <input id="room-width" class="form-control" type="number" min="2" max="8" step="0.1" @bind="RoomWidth" @bind:after="OnRoomSizeChanged" />
+                            </div>
+                            <div class="col-4">
+                                <label for="room-depth" class="form-label small fw-semibold">Tiefe (m)</label>
+                                <input id="room-depth" class="form-control" type="number" min="2" max="8" step="0.1" @bind="RoomDepth" @bind:after="OnRoomSizeChanged" />
+                            </div>
+                            <div class="col-4">
+                                <label for="room-height" class="form-label small fw-semibold">Höhe (m)</label>
+                                <input id="room-height" class="form-control" type="number" min="2" max="4" step="0.1" @bind="RoomHeight" @bind:after="OnRoomSizeChanged" />
+                            </div>
+                        </div>
+                        <p class="small text-muted mt-2 mb-0">Maße zwischen 2 und 8 m; Raumhöhe zwischen 2 und 4 m.</p>
+                    </div>
+                </section>
+
+                <section class="card border-0">
+                    <div class="card-header bg-white py-3">
+                        <h2 class="h6 fw-bold mb-0">Sanitärobjekte</h2>
+                    </div>
+                    <div class="card-body">
+                        <label for="fixture-type" class="form-label small fw-semibold">Objekt hinzufügen</label>
+                        <div class="input-group">
+                            <select id="fixture-type" class="form-select" @bind="SelectedFixtureType">
+                                @foreach (FixtureType type in Enum.GetValues<FixtureType>())
+                                {
+                                    <option value="@type">@FixtureName(type)</option>
+                                }
+                            </select>
+                            <button class="btn btn-primary" @onclick="AddFixture">Hinzufügen</button>
+                        </div>
+
+                        @if (Fixtures.Count == 0)
+                        {
+                            <p class="small text-muted mt-3 mb-0">Noch keine Objekte im Raum. Füge zum Beispiel eine Dusche oder einen Waschtisch hinzu.</p>
+                        }
+                        else
+                        {
+                            <div class="bath-fixture-list mt-3">
+                                @foreach (BathroomFixture fixture in Fixtures)
+                                {
+                                    <div class="bath-fixture-row @(SelectedFixtureId == fixture.Id ? "active" : "")">
+                                        <button class="bath-fixture-select" @onclick="() => SelectFixture(fixture.Id)">
+                                            <span class="bath-fixture-swatch" style="--fixture-color: @fixture.Color"></span>
+                                            <span>
+                                                <strong>@fixture.Name</strong>
+                                                <small>@fixture.Width.ToString("F1") × @fixture.Depth.ToString("F1") m</small>
+                                            </span>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" aria-label="@($"{fixture.Name} entfernen")" @onclick="() => RemoveFixture(fixture.Id)">×</button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </section>
+
+                @if (SelectedFixture is not null)
+                {
+                    <section class="card border-0">
+                        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                            <h2 class="h6 fw-bold mb-0">Position: @SelectedFixture.Name</h2>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveFixture(SelectedFixture.Id)">Entfernen</button>
+                        </div>
+                        <div class="card-body">
+                            <label for="fixture-x" class="form-label small fw-semibold d-flex justify-content-between">
+                                <span>Position X</span><span>@SelectedFixture.X.ToString("F1") m</span>
+                            </label>
+                            <input id="fixture-x" class="form-range" type="range" min="0" max="@MaxFixtureX(SelectedFixture)" step="0.1" @bind="SelectedFixture.X" @bind:event="oninput" />
+                            <label for="fixture-y" class="form-label small fw-semibold d-flex justify-content-between mt-2">
+                                <span>Position Y</span><span>@SelectedFixture.Y.ToString("F1") m</span>
+                            </label>
+                            <input id="fixture-y" class="form-range" type="range" min="0" max="@MaxFixtureY(SelectedFixture)" step="0.1" @bind="SelectedFixture.Y" @bind:event="oninput" />
+                            <p class="small text-muted mt-2 mb-0">Objektgröße: @SelectedFixture.Width.ToString("F1") × @SelectedFixture.Depth.ToString("F1") × @SelectedFixture.Height.ToString("F1") m</p>
+                        </div>
+                    </section>
+                }
+            </div>
+        </div>
+    </div>
+
+    <p class="small text-muted mt-4 mb-0">Planungsvorschau – der Entwurf wird aktuell nur während dieser Sitzung gehalten und noch nicht gespeichert.</p>
+</div>
+
+@code {
+    private const decimal MinimumRoomDimension = 2m;
+    private const decimal MaximumRoomDimension = 8m;
+    private decimal RoomWidth { get; set; } = 4m;
+    private decimal RoomDepth { get; set; } = 3m;
+    private decimal RoomHeight { get; set; } = 2.6m;
+    private FixtureType SelectedFixtureType { get; set; } = FixtureType.Waschtisch;
+    private Guid? SelectedFixtureId { get; set; }
+    private List<BathroomFixture> Fixtures { get; } = [];
+
+    private BathroomFixture? SelectedFixture => Fixtures.FirstOrDefault(fixture => fixture.Id == SelectedFixtureId);
+    private decimal Scale => 270m / Math.Max(RoomWidth, RoomDepth);
+    private decimal IsoX => Scale * .866m;
+    private decimal IsoY => Scale * .5m;
+    private decimal OriginX => 380m - (RoomWidth - RoomDepth) * IsoX / 2m;
+    private decimal OriginY => 95m;
+
+    private decimal Px(decimal x, decimal y, decimal z) => OriginX + (x - y) * IsoX;
+    private decimal Py(decimal x, decimal y, decimal z) => OriginY + (x + y) * IsoY - z * Scale * .88m;
+
+    private string RoomFloor() => string.Join(" ", new[]
+    {
+        Point(0, 0, 0), Point(RoomWidth, 0, 0), Point(RoomWidth, RoomDepth, 0), Point(0, RoomDepth, 0)
+    });
+
+    private string RoomWallYZero() => string.Join(" ", new[]
+    {
+        Point(0, 0, 0), Point(RoomWidth, 0, 0), Point(RoomWidth, 0, RoomHeight), Point(0, 0, RoomHeight)
+    });
+
+    private string RoomWallXZero() => string.Join(" ", new[]
+    {
+        Point(0, 0, 0), Point(0, RoomDepth, 0), Point(0, RoomDepth, RoomHeight), Point(0, 0, RoomHeight)
+    });
+
+    private string RoomOutline() => string.Join(" ", new[]
+    {
+        Point(0, 0, 0), Point(RoomWidth, 0, 0), Point(RoomWidth, RoomDepth, 0), Point(0, RoomDepth, 0), Point(0, 0, 0),
+        Point(0, 0, RoomHeight), Point(RoomWidth, 0, RoomHeight), Point(RoomWidth, 0, 0),
+        Point(RoomWidth, 0, RoomHeight), Point(RoomWidth, RoomDepth, RoomHeight), Point(RoomWidth, RoomDepth, 0),
+        Point(0, RoomDepth, 0), Point(0, RoomDepth, RoomHeight), Point(0, 0, RoomHeight)
+    });
+
+    private string FixtureTop(BathroomFixture fixture) => string.Join(" ", new[]
+    {
+        Point(fixture.X, fixture.Y, fixture.Height),
+        Point(fixture.X + fixture.Width, fixture.Y, fixture.Height),
+        Point(fixture.X + fixture.Width, fixture.Y + fixture.Depth, fixture.Height),
+        Point(fixture.X, fixture.Y + fixture.Depth, fixture.Height)
+    });
+
+    private string FixtureSideX(BathroomFixture fixture) => string.Join(" ", new[]
+    {
+        Point(fixture.X + fixture.Width, fixture.Y, 0),
+        Point(fixture.X + fixture.Width, fixture.Y + fixture.Depth, 0),
+        Point(fixture.X + fixture.Width, fixture.Y + fixture.Depth, fixture.Height),
+        Point(fixture.X + fixture.Width, fixture.Y, fixture.Height)
+    });
+
+    private string FixtureSideY(BathroomFixture fixture) => string.Join(" ", new[]
+    {
+        Point(fixture.X, fixture.Y + fixture.Depth, 0),
+        Point(fixture.X + fixture.Width, fixture.Y + fixture.Depth, 0),
+        Point(fixture.X + fixture.Width, fixture.Y + fixture.Depth, fixture.Height),
+        Point(fixture.X, fixture.Y + fixture.Depth, fixture.Height)
+    });
+
+    private string Point(decimal x, decimal y, decimal z) => $"{Px(x, y, z):F1},{Py(x, y, z):F1}";
+
+    private decimal MaxFixtureX(BathroomFixture fixture) => Math.Max(0, RoomWidth - fixture.Width);
+    private decimal MaxFixtureY(BathroomFixture fixture) => Math.Max(0, RoomDepth - fixture.Depth);
+
+    private void OnRoomSizeChanged()
+    {
+        RoomWidth = Math.Clamp(RoomWidth, MinimumRoomDimension, MaximumRoomDimension);
+        RoomDepth = Math.Clamp(RoomDepth, MinimumRoomDimension, MaximumRoomDimension);
+        RoomHeight = Math.Clamp(RoomHeight, 2m, 4m);
+        foreach (BathroomFixture fixture in Fixtures)
+        {
+            ClampFixture(fixture);
+        }
+    }
+
+    private void AddFixture()
+    {
+        BathroomFixture fixture = SelectedFixtureType switch
+        {
+            FixtureType.Dusche => new BathroomFixture("Dusche", "DUS", .9m, .9m, 2.1m, "#84b9b2"),
+            FixtureType.Badewanne => new BathroomFixture("Badewanne", "WANNE", 1.7m, .75m, .65m, "#7daeb4"),
+            FixtureType.Waschtisch => new BathroomFixture("Waschtisch", "WT", 1m, .55m, .85m, "#e3c997"),
+            FixtureType.WC => new BathroomFixture("WC", "WC", .7m, .75m, .8m, "#c8d3d0")
+        };
+        ClampFixture(fixture);
+        Fixtures.Add(fixture);
+        SelectedFixtureId = fixture.Id;
+    }
+
+    private void SelectFixture(Guid fixtureId) => SelectedFixtureId = fixtureId;
+
+    private void RemoveFixture(Guid fixtureId)
+    {
+        Fixtures.RemoveAll(fixture => fixture.Id == fixtureId);
+        if (SelectedFixtureId == fixtureId)
+        {
+            SelectedFixtureId = Fixtures.LastOrDefault()?.Id;
+        }
+    }
+
+    private void ResetPlan()
+    {
+        RoomWidth = 4m;
+        RoomDepth = 3m;
+        RoomHeight = 2.6m;
+        Fixtures.Clear();
+        SelectedFixtureId = null;
+        OnRoomSizeChanged();
+    }
+
+    private void ClampFixture(BathroomFixture fixture)
+    {
+        fixture.X = Math.Clamp(fixture.X, 0, Math.Max(0, RoomWidth - fixture.Width));
+        fixture.Y = Math.Clamp(fixture.Y, 0, Math.Max(0, RoomDepth - fixture.Depth));
+    }
+
+    private static string FixtureName(FixtureType type) => type switch
+    {
+        FixtureType.Dusche => "Dusche",
+        FixtureType.Badewanne => "Badewanne",
+        FixtureType.Waschtisch => "Waschtisch",
+        FixtureType.WC => "WC",
+        _ => type.ToString()
+    };
+
+    private static string ShadeColor(string color, double factor)
+    {
+        int red = Convert.ToInt32(color[1..3], 16);
+        int green = Convert.ToInt32(color[3..5], 16);
+        int blue = Convert.ToInt32(color[5..7], 16);
+        return $"#{(int)(red * factor):X2}{(int)(green * factor):X2}{(int)(blue * factor):X2}";
+    }
+
+    private void OnFixtureKeyDown(KeyboardEventArgs args, Guid fixtureId)
+    {
+        if (args.Key is "Enter" or " ")
+        {
+            SelectFixture(fixtureId);
+        }
+    }
+
+    private enum FixtureType
+    {
+        Dusche,
+        Badewanne,
+        Waschtisch,
+        WC
+    }
+
+    private sealed class BathroomFixture(string name, string shortName, decimal width, decimal depth, decimal height, string color)
+    {
+        public Guid Id { get; } = Guid.NewGuid();
+        public string Name { get; } = name;
+        public string ShortName { get; } = shortName;
+        public decimal Width { get; } = width;
+        public decimal Depth { get; } = depth;
+        public decimal Height { get; } = height;
+        public string Color { get; } = color;
+        public decimal X { get; set; }
+        public decimal Y { get; set; }
+    }
+}
