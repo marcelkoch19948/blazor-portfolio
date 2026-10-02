@@ -255,7 +255,8 @@
             FixtureType.Dusche => new BathroomFixture("Dusche", "DUS", .9m, .9m, 2.1m, "#84b9b2"),
             FixtureType.Badewanne => new BathroomFixture("Badewanne", "WANNE", 1.7m, .75m, .65m, "#7daeb4"),
             FixtureType.Waschtisch => new BathroomFixture("Waschtisch", "WT", 1m, .55m, .85m, "#e3c997"),
-            FixtureType.WC => new BathroomFixture("WC", "WC", .7m, .75m, .8m, "#c8d3d0")
+            FixtureType.WC => new BathroomFixture("WC", "WC", .7m, .75m, .8m, "#c8d3d0"),
+            _ => new BathroomFixture("Sanitärobjekt", "OBJ", .5m, .5m, .5m, "#c8d3d0")
         };
         ClampFixture(fixture);
         Fixtures.Add(fixture);
