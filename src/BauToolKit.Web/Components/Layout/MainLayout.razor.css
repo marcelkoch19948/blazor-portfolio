@@ -2,6 +2,7 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    min-height: 100vh;
 }
 
 main {
@@ -9,40 +10,52 @@ main {
 }
 
 .sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    background-color: #292c29;
+    background-image:
+        radial-gradient(ellipse at 10% 0%, rgba(199, 123, 39, .18), transparent 20rem),
+        linear-gradient(160deg, #303430, #222522 72%);
+    box-shadow: .5rem 0 1.5rem rgba(26, 27, 24, .08);
 }
 
 .top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
-    justify-content: flex-end;
-    height: 3.5rem;
+    background: rgba(247, 246, 242, .88);
+    border-bottom: 1px solid rgba(92, 86, 74, .12);
+    justify-content: space-between;
+    height: 4.25rem;
     display: flex;
     align-items: center;
+    backdrop-filter: blur(14px);
 }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
-    }
+.top-row .workspace-label {
+    color: #75746e;
+    font-size: .78rem;
+    font-weight: 650;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
 
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
-    }
+.top-row .status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    color: #575950;
+    font-size: .82rem;
+    font-weight: 600;
+}
 
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
+.top-row .status-indicator::before {
+    width: .5rem;
+    height: .5rem;
+    border-radius: 50%;
+    background: #638b59;
+    content: "";
+    box-shadow: 0 0 0 .22rem rgba(99, 139, 89, .13);
+}
 
 @media (max-width: 640.98px) {
     .top-row {
-        justify-content: space-between;
-    }
-
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
+        height: 3.75rem;
     }
 }
 
@@ -52,7 +65,7 @@ main {
     }
 
     .sidebar {
-        width: 250px;
+        width: 270px;
         height: 100vh;
         position: sticky;
         top: 0;
@@ -62,12 +75,6 @@ main {
         position: sticky;
         top: 0;
         z-index: 1;
-    }
-
-    .top-row.auth ::deep a:first-child {
-        flex: 1;
-        text-align: right;
-        width: 0;
     }
 
     .top-row, article {
