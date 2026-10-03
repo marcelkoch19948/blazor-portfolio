@@ -1,0 +1,345 @@
+@page "/fotodokumentation"
+@rendermode InteractiveServer
+@inject IPhotoDocumentationService PhotoService
+@inject IFileStorageService FileStorageService
+@inject IConstructionSiteService SiteService
+@inject IUserRepository UserRepository
+
+<PageTitle>Fotodokumentation - BauToolKit</PageTitle>
+
+<div class="container py-4">
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1">📸 Fotodokumentation</h2>
+        <p class="text-muted mb-0">Baustellenfotos hochladen und als Bautagebuch dokumentieren.</p>
+    </div>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@ErrorMessage</div>
+    }
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Lade Fotodokumentation...</p>
+        </div>
+    }
+    else if (Sites.Count == 0)
+    {
+        <div class="alert alert-info">Lege zuerst eine Baustelle an, um Fotos zu dokumentieren.</div>
+    }
+    else
+    {
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Foto zur Baustelle hinzufügen</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="photo-site" class="form-label fw-bold small">Baustelle</label>
+                        <select id="photo-site" class="form-select" @bind="SelectedSiteIdString" @bind:after="OnSiteChangedAsync">
+                            <option value="">-- Baustelle wählen --</option>
+                            @foreach (ConstructionSite site in Sites)
+                            {
+                                <option value="@site.Id">@site.Title (@site.City)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="photo-user" class="form-label fw-bold small">Hochgeladen von</label>
+                        <select id="photo-user" class="form-select" @bind="SelectedUserIdString">
+                            <option value="">-- Mitarbeiter wählen --</option>
+                            @foreach (User user in Users.Where(user => user.IsActive))
+                            {
+                                <option value="@user.Id">@user.FullName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="photo-file" class="form-label fw-bold small">Bilddatei</label>
+                        <InputFile id="photo-file" @key="FileInputKey" OnChange="OnFileSelected" accept="image/jpeg,image/png,image/gif,image/webp" class="form-control" />
+                        @if (SelectedFile is not null)
+                        {
+                            <small class="text-muted">@(SelectedFile.Name) (@(SelectedFile.Size / 1024) KB)</small>
+                        }
+                        <small class="d-block text-muted">JPEG, PNG, GIF oder WebP; maximal 10 MB.</small>
+                    </div>
+                    <div class="col-12">
+                        <label for="photo-description" class="form-label fw-bold small">Beschreibung (optional)</label>
+                        <input id="photo-description" type="text" class="form-control" maxlength="500" placeholder="z. B. Dachstuhl vor dem Eindecken" @bind="Description" />
+                    </div>
+                </div>
+                <div class="mt-3 text-end">
+                    <button class="btn btn-success" @onclick="() => UploadPhotoAsync()" disabled="@(SelectedFile is null || string.IsNullOrEmpty(SelectedSiteIdString) || string.IsNullOrEmpty(SelectedUserIdString) || IsUploading)">
+                        @(IsUploading ? "Wird hochgeladen..." : "Foto hochladen")
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="h5 fw-bold mb-0">Fotos der ausgewählten Baustelle</h3>
+            <span class="text-muted small">@Photos.Count Foto(s)</span>
+        </div>
+
+        @if (string.IsNullOrEmpty(SelectedSiteIdString))
+        {
+            <div class="alert alert-info">Wähle eine Baustelle aus, um ihre Fotos zu sehen.</div>
+        }
+        else if (Photos.Count == 0)
+        {
+            <div class="alert alert-light border">Für diese Baustelle sind noch keine Fotos vorhanden.</div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (PhotoGalleryItem item in Photos)
+                {
+                    User? uploader = Users.FirstOrDefault(user => user.Id == item.Photo.UploadedByUserId);
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="card h-100 shadow-sm border-0">
+                            @if (item.DataUrl is not null)
+                            {
+                                <img src="@item.DataUrl" class="card-img-top" alt="@(!string.IsNullOrWhiteSpace(item.Photo.Description) ? item.Photo.Description : item.Photo.FileName)" style="height: 220px; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <div class="bg-light text-muted d-flex align-items-center justify-content-center" style="height: 220px;">Vorschau nicht verfügbar</div>
+                            }
+                            <div class="card-body">
+                                <h4 class="h6 fw-bold mb-1">@item.Photo.FileName</h4>
+                                @if (!string.IsNullOrWhiteSpace(item.Photo.Description))
+                                {
+                                    <p class="small mb-2">@item.Photo.Description</p>
+                                }
+                                <small class="text-muted d-block">@item.Photo.CapturedAtUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</small>
+                                <small class="text-muted">Hochgeladen von: @(uploader?.FullName ?? "Unbekannt")</small>
+                            </div>
+                            <div class="card-footer bg-white border-0 pt-0 text-end">
+                                <button class="btn btn-sm btn-outline-danger" aria-label="@($"Foto {item.Photo.FileName} löschen")" @onclick="() => DeletePhotoAsync(item.Photo.Id)" disabled="@IsUploading">Löschen</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private const long MaximumFileSize = 10 * 1024 * 1024;
+    private IReadOnlyList<ConstructionSite> Sites { get; set; } = Array.Empty<ConstructionSite>();
+    private IReadOnlyList<User> Users { get; set; } = Array.Empty<User>();
+    private IReadOnlyList<PhotoGalleryItem> Photos { get; set; } = Array.Empty<PhotoGalleryItem>();
+    private IBrowserFile? SelectedFile { get; set; }
+    private string SelectedSiteIdString { get; set; } = string.Empty;
+    private string SelectedUserIdString { get; set; } = string.Empty;
+    private string Description { get; set; } = string.Empty;
+    private string? ErrorMessage { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private bool IsUploading { get; set; }
+    private int FileInputKey { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Task<IReadOnlyList<ConstructionSite>> sitesTask = SiteService.GetAllAsync();
+            Task<IReadOnlyList<User>> usersTask = UserRepository.GetAllAsync();
+            await Task.WhenAll(sitesTask, usersTask);
+            Sites = await sitesTask;
+            Users = await usersTask;
+
+            if (Sites.Count > 0)
+            {
+                SelectedSiteIdString = Sites[0].Id.ToString();
+                await LoadPhotosAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task OnSiteChangedAsync()
+    {
+        ErrorMessage = null;
+        await LoadPhotosAsync();
+    }
+
+    private async Task LoadPhotosAsync(CancellationToken cancellationToken = default)
+    {
+        Photos = Array.Empty<PhotoGalleryItem>();
+        if (!Guid.TryParse(SelectedSiteIdString, out Guid siteId))
+        {
+            return;
+        }
+
+        try
+        {
+            IReadOnlyList<PhotoDocumentation> photos = await PhotoService.GetBySiteIdAsync(siteId, cancellationToken);
+            List<PhotoGalleryItem> galleryItems = new(photos.Count);
+            foreach (PhotoDocumentation photo in photos.OrderByDescending(photo => photo.CapturedAtUtc))
+            {
+                await using Stream? stream = await FileStorageService.GetFileAsync(photo.StoragePath, cancellationToken);
+                if (stream is null)
+                {
+                    galleryItems.Add(new PhotoGalleryItem(photo, null));
+                    continue;
+                }
+
+                byte[]? content = await ReadBoundedAsync(stream, cancellationToken);
+                string extension = Path.GetExtension(photo.FileName).ToLowerInvariant();
+                string? contentType = GetImageContentType(content, extension);
+                galleryItems.Add(new PhotoGalleryItem(
+                    photo,
+                    content is not null && contentType is not null
+                        ? $"data:{contentType};base64,{Convert.ToBase64String(content)}"
+                        : null));
+            }
+
+            Photos = galleryItems;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs args)
+    {
+        ErrorMessage = null;
+        SelectedFile = args.File;
+        if (SelectedFile.Size > MaximumFileSize)
+        {
+            SelectedFile = null;
+            ErrorMessage = "Die Bilddatei darf maximal 10 MB groß sein.";
+        }
+    }
+
+    private async Task UploadPhotoAsync(CancellationToken cancellationToken = default)
+    {
+        ErrorMessage = null;
+        if (SelectedFile is null)
+        {
+            ErrorMessage = "Bitte wähle eine Bilddatei aus.";
+            return;
+        }
+
+        if (!Guid.TryParse(SelectedSiteIdString, out Guid siteId))
+        {
+            ErrorMessage = "Bitte wähle eine Baustelle aus.";
+            return;
+        }
+
+        if (!Guid.TryParse(SelectedUserIdString, out Guid userId))
+        {
+            ErrorMessage = "Bitte wähle den hochladenden Mitarbeiter aus.";
+            return;
+        }
+
+        IsUploading = true;
+        try
+        {
+            await using Stream uploadStream = SelectedFile.OpenReadStream(MaximumFileSize, cancellationToken);
+            using MemoryStream buffer = new();
+            await uploadStream.CopyToAsync(buffer, cancellationToken);
+            byte[] content = buffer.ToArray();
+            string extension = Path.GetExtension(SelectedFile.Name).ToLowerInvariant();
+            if (GetImageContentType(content, extension) is null)
+            {
+                ErrorMessage = "Die Datei ist kein unterstütztes Bildformat. Erlaubt sind JPEG, PNG, GIF und WebP.";
+                return;
+            }
+
+            using MemoryStream verifiedStream = new(content);
+            await PhotoService.AddPhotoAsync(new PhotoUploadRequest(
+                ConstructionSiteId: siteId,
+                UploadedByUserId: userId,
+                FileName: Path.GetFileName(SelectedFile.Name),
+                Content: verifiedStream,
+                Description: string.IsNullOrWhiteSpace(Description) ? null : Description.Trim()), cancellationToken);
+
+            SelectedFile = null;
+            FileInputKey++;
+            Description = string.Empty;
+            await LoadPhotosAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsUploading = false;
+        }
+    }
+
+    private async Task DeletePhotoAsync(Guid photoId, CancellationToken cancellationToken = default)
+    {
+        ErrorMessage = null;
+        try
+        {
+            if (!await PhotoService.DeletePhotoAsync(photoId, cancellationToken))
+            {
+                ErrorMessage = "Das Foto konnte nicht gefunden werden.";
+                return;
+            }
+
+            await LoadPhotosAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
+
+    private static async Task<byte[]?> ReadBoundedAsync(Stream stream, CancellationToken cancellationToken)
+    {
+        using MemoryStream buffer = new();
+        byte[] chunk = new byte[81920];
+        int totalBytes = 0;
+        while (true)
+        {
+            int bytesRead = await stream.ReadAsync(chunk.AsMemory(0, Math.Min(chunk.Length, (int)MaximumFileSize + 1 - totalBytes)), cancellationToken);
+            if (bytesRead == 0)
+            {
+                return buffer.ToArray();
+            }
+
+            totalBytes += bytesRead;
+            if (totalBytes > MaximumFileSize)
+            {
+                return null;
+            }
+
+            await buffer.WriteAsync(chunk.AsMemory(0, bytesRead), cancellationToken);
+        }
+    }
+
+    private static string? GetImageContentType(byte[]? content, string extension)
+    {
+        if (content is null || content.Length < 12)
+        {
+            return null;
+        }
+
+        return extension switch
+        {
+            ".jpg" or ".jpeg" when content[0] == 0xFF && content[1] == 0xD8 && content[2] == 0xFF => "image/jpeg",
+            ".png" when content.AsSpan(0, 8).SequenceEqual(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }) => "image/png",
+            ".gif" when content.AsSpan(0, 6).SequenceEqual("GIF87a"u8) || content.AsSpan(0, 6).SequenceEqual("GIF89a"u8) => "image/gif",
+            ".webp" when content.AsSpan(0, 4).SequenceEqual("RIFF"u8) && content.AsSpan(8, 4).SequenceEqual("WEBP"u8) => "image/webp",
+            _ => null
+        };
+    }
+
+    private sealed record PhotoGalleryItem(PhotoDocumentation Photo, string? DataUrl);
+}

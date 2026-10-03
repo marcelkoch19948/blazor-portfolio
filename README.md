@@ -77,8 +77,8 @@ blazor-portfolio/
 ### 5. Abgrenzung: 3D-Aufmaß / 3D-Hausplaner
 
 In der ursprünglichen Projektidee ist ein integrierter 3D-Hausplaner vorgesehen, bei dem vor Ort aufgemessen wird und die Anwendung ein 3D-Modell erzeugt.
-- **Aktueller Stand (MVP-Fundament):** Die Domänenmodelle `MeasurementProject` und `SurveyPoint` mit Statusverwaltung (`Erfasst`, `InBearbeitung`, `Exportiert`) sind angelegt, um Vermessungsdaten strukturiert zu speichern.
-- **Spätere Ausbaustufe (Phase 2):** Die konkrete 3D-Visualisierung (z. B. via Three.js / WebGL im Blazor-Frontend oder CAD-Import) und die Anbindung von Bluetooth-Messwerkzeugen (z. B. Laser-Distanzmessgeräte) werden als eigenständiges Modul in einer Folgestufe realisiert.
+- **Aktueller Stand:** Die Domänenmodelle `MeasurementProject` und `SurveyPoint` mit Statusverwaltung (`Erfasst`, `InBearbeitung`, `Exportiert`) bilden das Aufmaß-Fundament. Zusätzlich bietet der Web-Frontend-Prototyp unter `/badplaner` eine isometrische Badplanung mit anpassbaren Raummaßen und platzierbaren Sanitärobjekten. Der Entwurf wird derzeit nur während der Sitzung gehalten und nicht gespeichert.
+- **Spätere Ausbaustufe:** Persistente Planprojekte, maßstabsgetreue 3D-Visualisierung (z. B. via Three.js / WebGL oder CAD-Import) und Bluetooth-Messwerkzeuge (z. B. Laser-Distanzmessgeräte) bleiben eigenständige Erweiterungen.
 
 ---
 
