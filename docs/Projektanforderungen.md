@@ -41,7 +41,7 @@ Dieses Dokument ist die verbindliche, projektbezogene Anforderungsspezifikation 
 **Ziel und Anforderungen:** Die Schicht implementiert Application-Abstraktionen durch In-Memory-Repositories und lokalen Dateispeicher. Infrastrukturdetails bleiben hinter den Schnittstellen verborgen.
 
 **Roadmap:**
-1. Verhalten und Cancellation-Unterstützung der Repository- und Dateispeicherimplementierungen testen.
+1. Verhalten und Cancellation-Unterstützung der Repository- und Dateispeicherimplementierungen testen. Initiale Tests für das Kundenrepository und den lokalen Dateispeicher liegen vor; die übrigen Repositories benötigen weiterhin eigene Tests.
 2. Dauerhafte Datenbank- und Dateispeicherlösungen als gesonderte Ausbaustufe spezifizieren, bevor In-Memory-Speicher ersetzt werden.
 
 ## `src/BauToolKit.Api/BauToolKit.Api.csproj` — API
