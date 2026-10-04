@@ -72,6 +72,8 @@ blazor-portfolio/
     └── BauToolKit.UnitTests/           # Unit-Tests (xUnit, FluentAssertions, NSubstitute)
 ```
 
+Die verbindlichen Anforderungen und die Roadmap für jedes der neun .NET-Projekte sind in [docs/Projektanforderungen.md](docs/Projektanforderungen.md) festgehalten. Projektänderungen sollen diese Roadmap einhalten und bei Bedarf dort nachgeführt werden.
+
 ---
 
 ### 5. Abgrenzung: 3D-Aufmaß / 3D-Hausplaner
