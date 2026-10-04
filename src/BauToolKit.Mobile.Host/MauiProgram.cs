@@ -4,7 +4,6 @@
 using BauToolKit.Application;
 using BauToolKit.Infrastructure;
 using Microsoft.AspNetCore.Components.WebView.Maui;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Hosting;
 using Microsoft.Maui.Hosting;
@@ -33,11 +32,7 @@ public static class MauiProgram
         MauiApp app = builder.Build();
 
         // Seed demo data for mobile offline/local use
-        using (IServiceScope scope = app.Services.CreateScope())
-        {
-            var seeder = scope.ServiceProvider.GetRequiredService<SampleDataSeeder>();
-            seeder.SeedAsync().GetAwaiter().GetResult();
-        }
+        SampleDataSeeder.SeedAsync(app.Services).GetAwaiter().GetResult();
 
         return app;
     }
