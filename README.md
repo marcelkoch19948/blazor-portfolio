@@ -132,7 +132,7 @@ Es gibt zwei Wege, BauToolKit auf dem Smartphone auszuprobieren:
    Die Blazor Web App ist responsiv optimiert und passt sich an Smartphone-Bildschirme an.
 
 ##### Option B: Als native App (.NET MAUI Blazor Hybrid) installieren
-1. **Voraussetzung:** Installiere die .NET MAUI Workloads auf deinem Entwicklungs-PC:
+1. **Voraussetzungen:** Android 6.0 (API 23) oder höher auf dem Smartphone sowie die .NET MAUI-Workloads auf dem Entwicklungs-PC:
    ```bash
    dotnet workload install maui
    # oder gezielt für Android:
