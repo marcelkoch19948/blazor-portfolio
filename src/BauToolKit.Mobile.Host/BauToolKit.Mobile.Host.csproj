@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <!-- When BuildingForMaui is true, target native mobile/desktop platforms; otherwise fallback to net8.0 for environments without MAUI workloads installed -->
-    <TargetFrameworks Condition="'$(BuildingForMaui)' == 'true'">net8.0-android;net8.0-ios;net8.0-maccatalyst;net8.0-windows10.0.19041.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(BuildingForMaui)' == 'true' and '$(AndroidOnlyBuild)' != 'true'">net8.0-android;net8.0-ios;net8.0-maccatalyst;net8.0-windows10.0.19041.0</TargetFrameworks>
+    <TargetFramework Condition="'$(BuildingForMaui)' == 'true' and '$(AndroidOnlyBuild)' == 'true'">net8.0-android</TargetFramework>
     <TargetFramework Condition="'$(BuildingForMaui)' != 'true'">net8.0</TargetFramework>
     <OutputType Condition="'$(BuildingForMaui)' == 'true'">Exe</OutputType>
     <RootNamespace>BauToolKit.Mobile.Host</RootNamespace>
