@@ -72,6 +72,8 @@ blazor-portfolio/
     └── BauToolKit.UnitTests/           # Unit-Tests (xUnit, FluentAssertions, NSubstitute)
 ```
 
+Die verbindlichen Anforderungen und die Roadmap für jedes der neun .NET-Projekte sind in [docs/Projektanforderungen.md](docs/Projektanforderungen.md) festgehalten. Projektänderungen sollen diese Roadmap einhalten und bei Bedarf dort nachgeführt werden.
+
 ---
 
 ### 5. Abgrenzung: 3D-Aufmaß / 3D-Hausplaner
@@ -130,7 +132,7 @@ Es gibt zwei Wege, BauToolKit auf dem Smartphone auszuprobieren:
    Die Blazor Web App ist responsiv optimiert und passt sich an Smartphone-Bildschirme an.
 
 ##### Option B: Als native App (.NET MAUI Blazor Hybrid) installieren
-1. **Voraussetzung:** Installiere die .NET MAUI Workloads auf deinem Entwicklungs-PC:
+1. **Voraussetzungen:** Android 6.0 (API 23) oder höher auf dem Smartphone sowie die .NET MAUI-Workloads auf dem Entwicklungs-PC:
    ```bash
    dotnet workload install maui
    # oder gezielt für Android:
@@ -141,12 +143,12 @@ Es gibt zwei Wege, BauToolKit auf dem Smartphone auszuprobieren:
    - Schließe das Smartphone per USB-Kabel an den PC an.
 3. **App direkt auf dem angeschlossenen Smartphone oder Emulator ausführen:**
    ```bash
-   dotnet build src/BauToolKit.Mobile.Host/BauToolKit.Mobile.Host.csproj -t:Run -f net8.0-android -p:BuildingForMaui=true
+   dotnet build src/BauToolKit.Mobile.Host/BauToolKit.Mobile.Host.csproj -t:Run -f net8.0-android -p:BuildingForMaui=true -p:AndroidOnlyBuild=true
    ```
    *(Alternativ in Visual Studio: `BauToolKit.Mobile.Host` als Startprojekt festlegen, Zielplattform `net8.0-android` und das Smartphone als Zielgerät auswählen und auf „Starten“ drücken).*
 4. **Standalone APK zum manuellen Installieren bauen:**
    ```bash
-   dotnet publish src/BauToolKit.Mobile.Host/BauToolKit.Mobile.Host.csproj -f net8.0-android -c Release -p:BuildingForMaui=true
+   dotnet publish src/BauToolKit.Mobile.Host/BauToolKit.Mobile.Host.csproj -f net8.0-android -c Release -p:BuildingForMaui=true -p:AndroidOnlyBuild=true
    ```
    Die erzeugte `.apk`-Datei befindet sich in `src/BauToolKit.Mobile.Host/bin/Release/net8.0-android/publish/` und kann direkt auf das Smartphone kopiert und installiert werden.
 
